@@ -2,23 +2,32 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Edit2, Plus, GripVertical } from "lucide-react";
+import { Edit2, Plus, GripVertical, Trash2 } from "lucide-react";
 
 export default function MenuPage() {
-  const [activeTab, setActiveTab] = useState("formati");
+  const [activeTab, setActiveTab] = useState("primo_formato");
   const [items, setItems] = useState<any[]>([]);
   const [combos, setCombos] = useState<any[]>([]);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const supabase = createClient();
+  const companyId = "11111111-1111-1111-1111-111111111111";
+
+  const load = async () => {
+    const { data: i } = await supabase.from('menu_items').select('*').order('sort_order');
+    const { data: c } = await supabase.from('combos').select('*').order('id');
+    if (i) setItems(i);
+    if (c) setCombos(c);
+  };
 
   useEffect(() => {
-    async function load() {
-      const { data: i } = await supabase.from('menu_items').select('*').order('sort_order');
-      const { data: c } = await supabase.from('combos').select('*').order('id');
-      if (i) setItems(i);
-      if (c) setCombos(c);
-    }
     load();
   }, []);
+
+  const deleteItem = async (id: string) => {
+    if (!confirm("Eliminare elemento?")) return;
+    await supabase.from('menu_items').delete().eq('id', id);
+    load();
+  };
 
   const tabs = [
     { id: "primo_formato", label: "Formati Pasta" },
@@ -38,7 +47,6 @@ export default function MenuPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="flex space-x-4 overflow-x-auto" aria-label="Tabs">
           {tabs.map((tab) => (
@@ -57,7 +65,6 @@ export default function MenuPage() {
         </nav>
       </div>
 
-      {/* Content Area */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         {activeTab !== "prezzi" ? (
           <div>
@@ -65,30 +72,29 @@ export default function MenuPage() {
               <h2 className="text-lg font-semibold text-[#14213D]">
                 Elenco {tabs.find(t => t.id === activeTab)?.label}
               </h2>
-              <button className="flex items-center gap-2 bg-[#14213D] text-white px-3 py-1.5 rounded-md text-sm hover:bg-gray-800 transition-colors">
+              <button onClick={() => setIsFormOpen(true)} className="flex items-center gap-2 bg-[#14213D] text-white px-3 py-1.5 rounded-md text-sm hover:bg-gray-800 transition-colors">
                 <Plus size={16} />
                 Aggiungi
               </button>
             </div>
             
             <div className="space-y-3">
+              {items.filter(i => i.category === activeTab).length === 0 && (
+                <div className="p-4 text-center text-gray-400 border rounded-lg">Nessun elemento presente in questa categoria.</div>
+              )}
               {items.filter(i => i.category === activeTab).map((item) => (
                 <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-4">
                     <GripVertical className="text-gray-400 cursor-move" size={20} />
-                    <div className="w-12 h-12 bg-gray-200 rounded object-cover flex-shrink-0" />
+                    <div className="w-12 h-12 bg-gray-200 rounded object-cover flex-shrink-0 flex items-center justify-center text-xs">Foto</div>
                     <div>
                       <h4 className="font-medium text-[#14213D]">{item.name}</h4>
                       <p className="text-xs text-gray-500">Allergeni: {item.allergens || 'Nessuno'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
-                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
-                    </label>
-                    <button className="text-gray-400 hover:text-blue-600 transition-colors">
-                      <Edit2 size={18} />
+                    <button onClick={() => deleteItem(item.id)} className="text-red-400 hover:text-red-600 transition-colors">
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 </div>
@@ -109,24 +115,65 @@ export default function MenuPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-    {combos.map(combo => (
-      <tr key={combo.id}>
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{combo.label}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Combo</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">
-          <input type="number" defaultValue={(combo.price_cents / 100).toFixed(2)} step="0.50" className="w-20 px-2 py-1 border rounded" />
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-          <button className="text-blue-600 hover:text-blue-900">Salva</button>
-        </td>
-      </tr>
-    ))}
-  </tbody>
+                  {combos.map(combo => (
+                    <tr key={combo.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{combo.label}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Combo</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">
+                        <input type="number" id={`combo-${combo.id}`} defaultValue={(combo.price_cents / 100).toFixed(2)} step="0.50" className="w-20 px-2 py-1 border rounded" />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onClick={async () => {
+                          const val = (document.getElementById(`combo-${combo.id}`) as HTMLInputElement).value;
+                          await supabase.from('combos').update({ price_cents: Math.round(parseFloat(val)*100) }).eq('id', combo.id);
+                          alert("Prezzo salvato!");
+                        }} className="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1 rounded">Salva</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
           </div>
         )}
       </div>
+
+      {isFormOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+            <h2 className="text-xl font-bold mb-4">Nuovo Elemento in {tabs.find(t => t.id === activeTab)?.label}</h2>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              await supabase.from('menu_items').insert({
+                company_id: companyId,
+                category: activeTab,
+                name: fd.get("name"),
+                allergens: fd.get("allergens"),
+                is_active: true,
+                sort_order: items.length
+              });
+              setIsFormOpen(false);
+              load();
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm mb-1">Nome</label>
+                  <input name="name" required className="w-full border p-2 rounded" placeholder="es. Penne al pomodoro" />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Allergeni (opzionale)</label>
+                  <input name="allergens" className="w-full border p-2 rounded" placeholder="es. Glutine, Lattosio" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 border rounded">Annulla</button>
+                <button type="submit" className="px-4 py-2 bg-[#14213D] text-white font-bold rounded">Crea Elemento</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
