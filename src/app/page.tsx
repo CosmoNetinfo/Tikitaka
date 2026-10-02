@@ -26,13 +26,24 @@ export default function Home() {
         </div>
       </div>
       
-      <div className="mt-auto pt-8 pb-4 w-full border-t border-gray-100">
+      <div className="mt-auto pt-6 pb-4 w-full border-t border-gray-100 flex flex-col items-center gap-3">
         <Link 
           href="/i-miei-ordini" 
-          className="text-[#14213D] font-semibold underline decoration-2 underline-offset-4 hover:text-blue-800 p-4 inline-block"
+          className="text-[#14213D] font-semibold underline decoration-2 underline-offset-4 hover:text-blue-800"
         >
           I miei ordini
         </Link>
+        <p className="text-xs text-gray-500">
+          Sviluppata e creata da{' '}
+          <a 
+            href="https://cosmonet.info" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="font-semibold text-[#14213D] underline hover:text-[#FFC300] transition-colors"
+          >
+            Daniele Spalletti di cosmonet.info
+          </a>
+        </p>
       </div>
     </main>
   );
