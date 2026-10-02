@@ -19,12 +19,16 @@ export default function ImpostazioniPage() {
       if (s) {
         setSettings(s);
       } else {
-        // Provide default values if no row exists yet
         setSettings({
           company_id: COMPANY_ID,
-          delivery_point_text: "",
-          order_cutoff_time: "20:00",
-          cancel_until_time: "10:00"
+          delivery_point_text: "Presso Tecnokar",
+          order_cutoff_time: "14:00",
+          cancel_until_time: "09:00",
+          issuer_name: "Tiki Taka di Laura Simonelli",
+          issuer_vat: "04034150542",
+          issuer_address: "Via dei Vetrai 58, 06049 Spoleto (PG)",
+          issuer_phone: "329 323 9693",
+          issuer_email: "Laura.simonelli02@yahoo.com",
         });
       }
       if (sl) setSlots(sl);
@@ -181,27 +185,27 @@ export default function ImpostazioniPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Ragione Sociale / Nome Titolare</label>
-              <input type="text" defaultValue="Tiki Taka di Laura Simonelli" className="w-full px-3 py-2 border rounded-md" />
+              <input type="text" value={settings.issuer_name || ""} onChange={e => setSettings({...settings, issuer_name: e.target.value})} className="w-full px-3 py-2 border rounded-md" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Partita IVA / Codice Fiscale</label>
-              <input type="text" defaultValue="04034150542" className="w-full px-3 py-2 border rounded-md" />
+              <input type="text" value={settings.issuer_vat || ""} onChange={e => setSettings({...settings, issuer_vat: e.target.value})} className="w-full px-3 py-2 border rounded-md" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Indirizzo Sede</label>
-              <input type="text" defaultValue="Via dei Vetrai 58, 06049 Spoleto (PG)" className="w-full px-3 py-2 border rounded-md" />
+              <input type="text" value={settings.issuer_address || ""} onChange={e => setSettings({...settings, issuer_address: e.target.value})} className="w-full px-3 py-2 border rounded-md" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Contatto Telefonico (per urgenze)</label>
-              <input type="tel" defaultValue="329 323 9693" className="w-full px-3 py-2 border rounded-md" />
+              <input type="tel" value={settings.issuer_phone || ""} onChange={e => setSettings({...settings, issuer_phone: e.target.value})} className="w-full px-3 py-2 border rounded-md" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input type="email" defaultValue="Laura.simonelli02@yahoo.com" className="w-full px-3 py-2 border rounded-md" />
+              <input type="email" value={settings.issuer_email || ""} onChange={e => setSettings({...settings, issuer_email: e.target.value})} className="w-full px-3 py-2 border rounded-md" />
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Testo a piè di pagina (Ricevuta)</label>
-              <textarea rows={3} defaultValue="Grazie per aver scelto Tiki Taka! Conserva questa ricevuta." className="w-full px-3 py-2 border rounded-md"></textarea>
+              <textarea rows={3} value={settings.receipt_footer || ""} onChange={e => setSettings({...settings, receipt_footer: e.target.value})} className="w-full px-3 py-2 border rounded-md"></textarea>
             </div>
           </div>
         </section>
