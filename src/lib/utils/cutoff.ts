@@ -91,3 +91,12 @@ export function isModificationOpen(
 ): boolean {
   return isOrderingOpen(deliveryDate, cutoffTimeStr, mondayCutoffOnSaturday)
 }
+
+export function isCutoffPassed(
+  deliveryDate: Date | string,
+  cutoffTimeStr: string = '14:00',
+  mondayCutoffOnSaturday: boolean = true
+): boolean {
+  return !isOrderingOpen(deliveryDate, cutoffTimeStr, mondayCutoffOnSaturday)
+}
+
