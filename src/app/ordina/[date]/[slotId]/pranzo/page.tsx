@@ -1,0 +1,280 @@
+'use client';
+
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import Header from '@/components/ui/Header';
+import BackButton from '@/components/ui/BackButton';
+import { useOrderStore } from '@/store/orderStore';
+
+interface MenuData {
+  primoFormatos: string[];
+  primoCondimentos: string[];
+  secondos: string[];
+  contornos: string[];
+  drinks: string[];
+  fuoriMenu: {
+    id: string;
+    name: string;
+    price: number;
+    image: string;
+  }[];
+}
+
+export default function BuildMeal({ params }: { params: { date: string, slotId: string } }) {
+  const router = useRouter();
+  const order = useOrderStore();
+  
+  const [menu, setMenu] = useState<MenuData | null>(null);
+
+  useEffect(() => {
+    // Mock menu fetching
+    setTimeout(() => {
+      setMenu({
+        primoFormatos: ['Linguine', 'Penne'],
+        primoCondimentos: ['Pomodoro e basilico', 'Pesto genovese', 'Cacio e pepe'],
+        secondos: ['Coscetti di pollo', 'Polpette al pomodoro', 'Spezzatino in agrodolce'],
+        contornos: ['Insalata verde', 'Patate al forno'],
+        drinks: ['Coca Cola (+2,00 €)', 'Fanta (+2,00 €)', 'Acqua frizzante (+1,00 €)'],
+        fuoriMenu: [
+          { id: 'f1', name: 'Lasagna al forno', price: 700, image: '🍝' },
+          { id: 'f2', name: 'Tiramisù', price: 400, image: '🍰' }
+        ]
+      });
+    }, 500);
+  }, []);
+
+  const isValid = useMemo(() => {
+    const hasPrimo = order.primo.formato && order.primo.condimento;
+    const hasSecondo = order.secondo;
+    const hasFuoriMenu = Object.values(order.specialItems).some(q => q > 0);
+    return hasPrimo || hasSecondo || hasFuoriMenu;
+  }, [order]);
+
+  const totalPrice = useMemo(() => {
+    let total = 0;
+    const hasPrimo = order.primo.formato && order.primo.condimento;
+    const hasSecondo = order.secondo;
+    
+    // Base combo logic (mocked)
+    if (hasPrimo && hasSecondo) total += 900;
+    else if (hasPrimo) total += 600;
+    else if (hasSecondo) total += 700;
+
+    // Extras
+    if (order.drink && order.drink.includes('+2')) total += 200;
+    if (order.drink && order.drink.includes('+1')) total += 100;
+
+    if (menu?.fuoriMenu) {
+      for (const [id, qty] of Object.entries(order.specialItems)) {
+        const item = menu.fuoriMenu.find(i => i.id === id);
+        if (item && qty > 0) total += item.price * qty;
+      }
+    }
+
+    return total;
+  }, [order, menu]);
+
+  const comboName = useMemo(() => {
+    const parts = [];
+    if (order.primo.formato && order.primo.condimento) parts.push('Primo');
+    if (order.secondo) parts.push('Secondo');
+    if (order.contorno) parts.push('Contorno');
+    
+    let base = parts.length > 0 ? parts.join(' + ') : 'Solo extra';
+    if (parts.length > 0) base += ' + Acqua';
+    return base;
+  }, [order]);
+
+  if (!menu) return <div className="p-8 text-center">Caricamento menu...</div>;
+
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-50 pb-36">
+      <Header />
+      
+      <main className="flex-1 p-4">
+        <BackButton />
+        <h1 className="text-2xl font-bold text-[#14213D] mb-6 mt-2 px-2">Componi il pranzo</h1>
+
+        {/* PRIMO */}
+        <section className="bg-white rounded-2xl p-5 mb-4 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-black text-[#14213D] mb-4">1. PRIMO</h2>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Formato pasta</label>
+            <div className="grid grid-cols-2 gap-2">
+              {menu.primoFormatos.map(f => (
+                <button 
+                  key={f}
+                  onClick={() => order.setPrimoFormato(order.primo.formato === f ? null : f)}
+                  className={`py-3 px-2 rounded-xl text-sm font-medium border-2 transition-colors ${
+                    order.primo.formato === f 
+                      ? 'bg-[#14213D] text-white border-[#14213D]' 
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Condimento</label>
+            <div className="grid grid-cols-1 gap-2">
+              {menu.primoCondimentos.map(c => (
+                <button 
+                  key={c}
+                  disabled={!order.primo.formato}
+                  onClick={() => order.setPrimoCondimento(order.primo.condimento === c ? null : c)}
+                  className={`py-3 px-4 rounded-xl text-sm font-medium border-2 text-left transition-colors ${
+                    !order.primo.formato 
+                      ? 'opacity-50 cursor-not-allowed bg-gray-50 border-gray-100' 
+                      : order.primo.condimento === c 
+                        ? 'bg-[#14213D] text-white border-[#14213D]' 
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* SECONDO */}
+        <section className="bg-white rounded-2xl p-5 mb-4 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-black text-[#14213D] mb-4">2. SECONDO</h2>
+          <div className="grid grid-cols-1 gap-2">
+            {menu.secondos.map(s => (
+              <button 
+                key={s}
+                onClick={() => {
+                  if (order.secondo === s) {
+                    order.setSecondo(null);
+                    order.setContorno(null);
+                  } else {
+                    order.setSecondo(s);
+                  }
+                }}
+                className={`py-3 px-4 rounded-xl text-sm font-medium border-2 text-left transition-colors ${
+                  order.secondo === s 
+                    ? 'bg-[#14213D] text-white border-[#14213D]' 
+                    : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* CONTORNO */}
+        <section className="bg-white rounded-2xl p-5 mb-4 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-black text-[#14213D] mb-4">3. CONTORNO</h2>
+          <p className="text-xs text-gray-500 mb-3">Disponibile solo con il secondo</p>
+          <div className="grid grid-cols-2 gap-2">
+            {menu.contornos.map(c => (
+              <button 
+                key={c}
+                disabled={!order.secondo}
+                onClick={() => order.setContorno(order.contorno === c ? null : c)}
+                className={`py-3 px-2 rounded-xl text-sm font-medium border-2 transition-colors ${
+                  !order.secondo
+                    ? 'opacity-50 cursor-not-allowed bg-gray-50 border-gray-100'
+                    : order.contorno === c 
+                      ? 'bg-[#14213D] text-white border-[#14213D]' 
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* BIBITA */}
+        <section className="bg-white rounded-2xl p-5 mb-4 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-black text-[#14213D] mb-4">4. BIBITA (Opzionale)</h2>
+          <div className="grid grid-cols-1 gap-2">
+            {menu.drinks.map(d => (
+              <button 
+                key={d}
+                onClick={() => order.setDrink(order.drink === d ? null : d)}
+                className={`py-3 px-4 rounded-xl text-sm font-medium border-2 text-left transition-colors ${
+                  order.drink === d 
+                    ? 'bg-[#14213D] text-white border-[#14213D]' 
+                    : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* FUORI MENU */}
+        {menu.fuoriMenu.length > 0 && (
+          <section className="bg-[#FFF9E6] border border-[#FFE066] rounded-2xl p-5 mb-4 shadow-sm">
+            <h2 className="text-lg font-black text-[#14213D] mb-1">⭐ FUORI MENU</h2>
+            <p className="text-sm text-gray-600 mb-4">Specialità del giorno</p>
+            
+            <div className="space-y-4">
+              {menu.fuoriMenu.map(item => (
+                <div key={item.id} className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100">
+                  <div className="flex items-center">
+                    <span className="text-2xl mr-3">{item.image}</span>
+                    <div>
+                      <div className="font-bold text-[#14213D]">{item.name}</div>
+                      <div className="text-sm font-semibold text-[#FFC300]">{(item.price / 100).toFixed(2)} €</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center bg-gray-100 rounded-lg">
+                    <button 
+                      onClick={() => order.setSpecialItem(item.id, Math.max(0, (order.specialItems[item.id] || 0) - 1))}
+                      className="w-10 h-10 flex items-center justify-center font-bold text-gray-600 active:bg-gray-200 rounded-l-lg"
+                    >-</button>
+                    <span className="w-6 text-center font-bold">{order.specialItems[item.id] || 0}</span>
+                    <button 
+                      onClick={() => order.setSpecialItem(item.id, Math.min(3, (order.specialItems[item.id] || 0) + 1))}
+                      className="w-10 h-10 flex items-center justify-center font-bold text-[#14213D] active:bg-gray-200 rounded-r-lg"
+                    >+</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
+
+      {/* BOTTOM BAR */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-40">
+        <div className="max-w-lg mx-auto flex items-center justify-between">
+          <div className="flex-1 mr-4">
+            <div className="text-xs font-semibold text-gray-500 truncate">{comboName}</div>
+            <div className="text-xl font-black text-[#14213D]">
+              Totale: {(totalPrice / 100).toFixed(2)} €
+            </div>
+          </div>
+          
+          <button
+            disabled={!isValid}
+            onClick={() => router.push(`/ordina/${params.date}/${params.slotId}/riepilogo`)}
+            className={`py-3 px-8 rounded-xl font-bold text-lg min-w-[120px] transition-all ${
+              isValid 
+                ? 'bg-[#FFC300] text-[#14213D] hover:shadow-md active:scale-95' 
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            AVANTI
+          </button>
+        </div>
+        {!isValid && (
+          <div className="text-xs text-red-500 mt-2 font-medium text-center">
+            Seleziona almeno un piatto per continuare
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
