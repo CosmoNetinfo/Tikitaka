@@ -119,9 +119,11 @@ export default function FuoriMenuPage() {
                 is_active: true
               };
               if (editingItem) {
-                await supabase.from('special_items').update(payload).eq('id', editingItem.id);
+                const { error } = await supabase.from('special_items').update(payload).eq('id', editingItem.id);
+                if (error) alert("Errore modifica: " + error.message);
               } else {
-                await supabase.from('special_items').insert(payload);
+                const { error } = await supabase.from('special_items').insert(payload);
+                if (error) alert("Errore creazione: " + error.message);
               }
               setIsFormOpen(false);
               loadItems();

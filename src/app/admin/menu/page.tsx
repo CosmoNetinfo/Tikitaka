@@ -164,7 +164,7 @@ export default function MenuPage() {
                  base64Image = 'data:' + fileInput.type + ';base64,' + btoa(binary);
               }
 
-              await supabase.from('menu_items').insert({
+              const { error } = await supabase.from('menu_items').insert({
                 company_id: companyId,
                 category: activeTab,
                 name: fd.get("name"),
@@ -173,6 +173,7 @@ export default function MenuPage() {
                 is_active: true,
                 sort_order: items.length
               });
+              if (error) alert("Errore creazione: " + error.message);
               setIsFormOpen(false);
               load();
             }}>
