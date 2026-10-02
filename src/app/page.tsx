@@ -1,7 +1,26 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { createClient } from '@/lib/supabase/server';
 
-export default function Home() {
+async function getCutoffTime(): Promise<string> {
+  try {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from('company_settings')
+      .select('order_cutoff_time')
+      .eq('company_id', '11111111-1111-1111-1111-111111111111')
+      .single();
+    if (data?.order_cutoff_time) {
+      // Format "14:00:00" -> "14:00"
+      return data.order_cutoff_time.slice(0, 5);
+    }
+  } catch {}
+  return '14:00';
+}
+
+export default async function Home() {
+  const cutoffTime = await getCutoffTime();
+
   return (
     <main className="flex-1 flex flex-col items-center justify-center p-6 text-center h-full min-h-screen">
       <div className="flex-1 flex flex-col items-center justify-center w-full">
@@ -29,7 +48,7 @@ export default function Home() {
         
         <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 w-full max-w-sm">
           <p className="text-sm text-[#14213D] font-medium">
-            ⏱️ Gli ordini si chiudono alle ore 14:00 del giorno prima della consegna.
+            ⏱️ Gli ordini si chiudono alle ore {cutoffTime} del giorno prima della consegna.
           </p>
         </div>
       </div>

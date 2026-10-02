@@ -148,17 +148,18 @@ export default function ImpostazioniPage() {
                 <div>
                   <h3 className="font-medium text-gray-900">Pagamento con Carta (Stripe)</h3>
                   <p className="text-sm text-gray-500">Attiva i pagamenti online sicuri. Richiede chiavi Stripe nelle variabili d'ambiente.</p>
+                  <p className="text-xs text-red-500 mt-1 font-medium">⚠️ Chiavi Stripe non configurate — funzione disabilitata</p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
+                <label className="relative inline-flex items-center opacity-40 cursor-not-allowed">
+                  <input type="checkbox" disabled className="sr-only peer" />
                   <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                 </label>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 opacity-40">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Commissione Carta</label>
-                  <select className="w-full px-3 py-2 border rounded-md bg-white">
+                  <select disabled className="w-full px-3 py-2 border rounded-md bg-white">
                     <option value="none">Nessuna maggiorazione</option>
                     <option value="fixed">Costo fisso (€)</option>
                     <option value="percent">Percentuale (%)</option>
@@ -166,7 +167,7 @@ export default function ImpostazioniPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Valore Commissione</label>
-                  <input type="number" step="0.01" defaultValue="0.50" className="w-full px-3 py-2 border rounded-md" />
+                  <input disabled type="number" step="0.01" defaultValue="0.50" className="w-full px-3 py-2 border rounded-md" />
                 </div>
               </div>
             </div>
@@ -180,19 +181,23 @@ export default function ImpostazioniPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Ragione Sociale / Nome Titolare</label>
-              <input type="text" defaultValue="Tiki Taka di Mario Rossi" className="w-full px-3 py-2 border rounded-md" />
+              <input type="text" defaultValue="Tiki Taka di Laura Simonelli" className="w-full px-3 py-2 border rounded-md" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Partita IVA / Codice Fiscale</label>
-              <input type="text" defaultValue="IT12345678901" className="w-full px-3 py-2 border rounded-md" />
+              <input type="text" defaultValue="04034150542" className="w-full px-3 py-2 border rounded-md" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Indirizzo Sede</label>
-              <input type="text" defaultValue="Via del Ristorante 1, Roma" className="w-full px-3 py-2 border rounded-md" />
+              <input type="text" defaultValue="Via dei Vetrai 58, 06049 Spoleto (PG)" className="w-full px-3 py-2 border rounded-md" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Contatto Telefonico (per urgenze)</label>
-              <input type="tel" defaultValue="+39 333 1234567" className="w-full px-3 py-2 border rounded-md" />
+              <input type="tel" defaultValue="329 323 9693" className="w-full px-3 py-2 border rounded-md" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" defaultValue="Laura.simonelli02@yahoo.com" className="w-full px-3 py-2 border rounded-md" />
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Testo a piè di pagina (Ricevuta)</label>
@@ -212,3 +217,4 @@ export default function ImpostazioniPage() {
     </div>
   );
 }
+
