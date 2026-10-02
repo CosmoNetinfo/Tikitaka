@@ -19,12 +19,20 @@ export default function FuoriMenuPage() {
       .from('special_items')
       .select('*')
       .order('created_at', { ascending: false });
-    if (error) console.error("Load error:", error);
+    if (error) console.error("Load error:", error.message, error.code);
     if (data) setItems(data);
+    else setItems([]);
   };
 
   useEffect(() => {
+    // Wait for auth session to hydrate before querying
+    const supabase = getSupabase();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) loadItems();
+    });
+    // Also try immediately in case session is already ready
     loadItems();
+    return () => subscription.unsubscribe();
   }, []);
 
   const toggleActive = async (id: string, currentStatus: boolean) => {
