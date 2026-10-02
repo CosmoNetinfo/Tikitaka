@@ -41,17 +41,26 @@ export default function Home() {
         >
           I miei ordini
         </Link>
-        <p className="text-xs text-gray-500">
-          Sviluppata e creata da{' '}
-          <a 
-            href="https://cosmonet.info" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="font-semibold text-[#14213D] underline hover:text-[#FFC300] transition-colors"
+        <div className="flex items-center gap-4 text-xs text-gray-500">
+          <p>
+            Sviluppata da{' '}
+            <a 
+              href="https://cosmonet.info" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="font-semibold text-[#14213D] underline hover:text-[#FFC300] transition-colors"
+            >
+              Daniele Spalletti di cosmonet.info
+            </a>
+          </p>
+          <span>•</span>
+          <Link 
+            href="/admin/login"
+            className="text-gray-400 hover:text-[#14213D] transition-colors"
           >
-            Daniele Spalletti di cosmonet.info
-          </a>
-        </p>
+            Area Admin
+          </Link>
+        </div>
       </div>
     </main>
   );
