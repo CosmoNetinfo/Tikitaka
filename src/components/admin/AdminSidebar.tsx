@@ -30,7 +30,7 @@ export default function AdminSidebar() {
     <>
       {/* Mobile top bar */}
       <div className="md:hidden flex items-center justify-between bg-[#14213D] px-4 py-2 text-white">
-        <Image src="/logo.png" alt="Tiki Taka" width={140} height={47} className="h-10 w-auto brightness-0 invert" />
+        <Image src="/logo-white.png" alt="Tiki Taka" width={140} height={47} className="h-10 w-auto" />
         <button onClick={() => setIsOpen(!isOpen)} className="text-white">
           {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -43,7 +43,7 @@ export default function AdminSidebar() {
       >
         {/* Desktop logo */}
         <div className="p-5 hidden md:flex flex-col items-center border-b border-white/10">
-          <Image src="/logo.png" alt="Tiki Taka" width={180} height={60} className="w-40 h-auto brightness-0 invert" />
+          <Image src="/logo-white.png" alt="Tiki Taka" width={180} height={60} className="w-40 h-auto" />
           <p className="text-xs text-gray-400 mt-1">Pannello Amministratore</p>
         </div>
 

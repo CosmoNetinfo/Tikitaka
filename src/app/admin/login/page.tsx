@@ -20,16 +20,27 @@ export default function AdminLogin() {
 
     try {
       const supabase = createClient();
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+
+      // 10s timeout in case Supabase URL is wrong/missing
+      const loginPromise = supabase.auth.signInWithPassword({ email, password });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout: controlla la connessione")), 10000)
+      );
+
+      const { error: authError } = await Promise.race([loginPromise, timeoutPromise]);
 
       if (authError) throw authError;
       router.push("/admin");
     } catch (err: unknown) {
+      console.error("Login error:", err);
       const message = err instanceof Error ? err.message : "Errore durante il login";
-      setError(message === "Invalid login credentials" ? "Credenziali non valide" : message);
+      if (message === "Invalid login credentials") {
+        setError("Credenziali non valide");
+      } else if (message.includes("fetch") || message.includes("network") || message.includes("Timeout")) {
+        setError("Errore di connessione. Riprova tra qualche secondo.");
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
