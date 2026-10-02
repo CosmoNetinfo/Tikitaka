@@ -13,9 +13,20 @@ export default function ImpostazioniPage() {
 
   useEffect(() => {
     async function load() {
-      const { data: s } = await supabase.from('company_settings').select('*').eq('company_id', COMPANY_ID).single();
+      const { data: s, error } = await supabase.from('company_settings').select('*').eq('company_id', COMPANY_ID).maybeSingle();
       const { data: sl } = await supabase.from('delivery_slots').select('*').eq('company_id', COMPANY_ID).order('sort_order');
-      if (s) setSettings(s);
+      
+      if (s) {
+        setSettings(s);
+      } else {
+        // Provide default values if no row exists yet
+        setSettings({
+          company_id: COMPANY_ID,
+          delivery_point_text: "",
+          order_cutoff_time: "20:00",
+          cancel_until_time: "10:00"
+        });
+      }
       if (sl) setSlots(sl);
     }
     load();
@@ -24,11 +35,18 @@ export default function ImpostazioniPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (settings) {
-      await supabase.from('company_settings').update(settings).eq('company_id', COMPANY_ID);
+      const { data } = await supabase.from('company_settings').select('company_id').eq('company_id', COMPANY_ID).maybeSingle();
+      if (data) {
+        await supabase.from('company_settings').update(settings).eq('company_id', COMPANY_ID);
+      } else {
+        await supabase.from('company_settings').insert(settings);
+      }
     }
     for (const slot of slots) {
       if (slot.id) {
         await supabase.from('delivery_slots').update(slot).eq('id', slot.id);
+      } else {
+        await supabase.from('delivery_slots').insert({ ...slot, company_id: COMPANY_ID });
       }
     }
     setShowToast(true);
