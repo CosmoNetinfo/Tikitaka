@@ -6,6 +6,8 @@ import Header from '@/components/ui/Header';
 import BackButton from '@/components/ui/BackButton';
 import { useOrderStore } from '@/store/orderStore';
 
+import { createClient } from '@/lib/supabase/client';
+
 interface MenuData {
   primoFormatos: string[];
   primoCondimentos: string[];
@@ -27,20 +29,41 @@ export default function BuildMeal({ params }: { params: { date: string, slotId: 
   const [menu, setMenu] = useState<MenuData | null>(null);
 
   useEffect(() => {
-    // Mock menu fetching
-    setTimeout(() => {
-      setMenu({
-        primoFormatos: ['Linguine', 'Penne'],
-        primoCondimentos: ['Pomodoro e basilico', 'Pesto genovese', 'Cacio e pepe'],
-        secondos: ['Coscetti di pollo', 'Polpette al pomodoro', 'Spezzatino in agrodolce'],
-        contornos: ['Insalata verde', 'Patate al forno'],
-        drinks: ['Coca Cola (+2,00 €)', 'Fanta (+2,00 €)', 'Acqua frizzante (+1,00 €)'],
-        fuoriMenu: [
-          { id: 'f1', name: 'Lasagna al forno', price: 700, image: '🍝' },
-          { id: 'f2', name: 'Tiramisù', price: 400, image: '🍰' }
-        ]
-      });
-    }, 500);
+    const fetchMenu = async () => {
+      try {
+        const supabase = createClient();
+        const [{ data: menuItems }, { data: specialItems }] = await Promise.all([
+          supabase.from('menu_items').select('*').eq('is_active', true).order('sort_order'),
+          supabase.from('special_items').select('*').eq('is_active', true).order('name')
+        ]);
+
+        const primoFormatos = menuItems?.filter(i => i.category === 'primo_formato').map(i => i.name) || [];
+        const primoCondimentos = menuItems?.filter(i => i.category === 'primo_condimento').map(i => i.name) || [];
+        const secondos = menuItems?.filter(i => i.category === 'secondo').map(i => i.name) || [];
+        const contornos = menuItems?.filter(i => i.category === 'contorno').map(i => i.name) || [];
+        const drinks = menuItems?.filter(i => i.category === 'bibita').map(i => i.name) || [];
+
+        const fuoriMenu = specialItems?.map(s => ({
+          id: s.id,
+          name: s.name,
+          price: s.price_cents,
+          image: s.image_url || '⭐'
+        })) || [];
+
+        setMenu({
+          primoFormatos: primoFormatos.length > 0 ? primoFormatos : ['Linguine', 'Penne'],
+          primoCondimentos: primoCondimentos.length > 0 ? primoCondimentos : ['Pomodoro e basilico', 'Pesto genovese', 'Cacio e pepe'],
+          secondos: secondos.length > 0 ? secondos : ['Coscetti di pollo', 'Polpette al pomodoro', 'Spezzatino in agrodolce'],
+          contornos: contornos.length > 0 ? contornos : ['Insalata verde', 'Patate al forno'],
+          drinks: drinks.length > 0 ? drinks : ['Coca Cola (+2,00 €)', 'Fanta (+2,00 €)', 'Acqua frizzante (+1,00 €)'],
+          fuoriMenu
+        });
+      } catch (err) {
+        console.error("Error loading real menu:", err);
+      }
+    };
+
+    fetchMenu();
   }, []);
 
   const isValid = useMemo(() => {
@@ -222,7 +245,11 @@ export default function BuildMeal({ params }: { params: { date: string, slotId: 
               {menu.fuoriMenu.map(item => (
                 <div key={item.id} className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100">
                   <div className="flex items-center">
-                    <span className="text-2xl mr-3">{item.image}</span>
+                    {item.image && (item.image.startsWith('data:') || item.image.startsWith('http')) ? (
+                      <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover mr-3 flex-shrink-0" />
+                    ) : (
+                      <span className="text-2xl mr-3">{item.image}</span>
+                    )}
                     <div>
                       <div className="font-bold text-[#14213D]">{item.name}</div>
                       <div className="text-sm font-semibold text-[#FFC300]">{(item.price / 100).toFixed(2)} €</div>

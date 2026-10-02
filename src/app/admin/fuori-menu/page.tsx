@@ -18,7 +18,7 @@ export default function FuoriMenuPage() {
     const { data, error } = await supabase
       .from('special_items')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('name');
     if (error) console.error("Load error:", error.message, error.code);
     if (data) setItems(data);
     else setItems([]);

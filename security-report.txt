@@ -1,0 +1,17 @@
+﻿====== SECURITY REPORT - Tiki Taka ======
+Data: 2026-10-02 23:16
+
+--- [1] File .env committati nel repository ---
+ATTENZIONE: trovati file .env nel repository:
+  - .env.example
+
+--- [2] Chiavi segrete in variabili NEXT_PUBLIC_ ---
+OK - Nessuna chiave segreta in variabili NEXT_PUBLIC_
+
+--- [3] Chiavi hardcodate nel codice sorgente ---
+OK - Nessun JWT hardcodato nel codice sorgente
+
+--- [4] RLS sulla tabella orders ---
+INFO: Tabella orders accessibile con service_role (normale). Verificare policy RLS per anon.
+
+====== FINE REPORT ======

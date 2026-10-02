@@ -69,12 +69,40 @@ export default function AdminSidebar() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/10">
+        <div className="p-4 border-t border-white/10 space-y-2">
+          {/* Status badge & publish button */}
+          <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-xs">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse"></span>
+              <span className="font-semibold text-green-400">Modifiche Live per Clienti</span>
+            </div>
+            <p className="text-gray-400 text-[11px] leading-relaxed mb-2">
+              Ogni modifica salvata è immediatamente visibile sull&apos;app cliente.
+            </p>
+            <button
+              onClick={() => {
+                alert("✓ Tutte le modifiche salvate nel pannello sono attive e visibili in tempo reale sull'app dei clienti!");
+              }}
+              className="w-full bg-[#FFC300] hover:bg-[#e6b000] text-[#14213D] font-bold py-1.5 px-2 rounded text-xs transition-colors shadow-sm flex items-center justify-center gap-1.5"
+            >
+              <span>⚡ Rendi effettive modifiche</span>
+            </button>
+          </div>
+
+          <a
+            href="/ordina"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 px-3 py-2 w-full rounded-lg bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 text-xs font-medium transition-colors border border-blue-500/30"
+          >
+            <span>📱 Apri App Cliente (Test)</span>
+          </a>
+
           <button
             onClick={handleLogout}
-            className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg hover:bg-white/10 transition-colors text-red-400 hover:text-red-300"
+            className="flex items-center space-x-3 px-4 py-2 w-full rounded-lg hover:bg-white/10 transition-colors text-red-400 hover:text-red-300 text-sm"
           >
-            <LogOut size={20} />
+            <LogOut size={18} />
             <span>Esci</span>
           </button>
         </div>
