@@ -9,6 +9,7 @@ export default function MenuPage() {
   const [items, setItems] = useState<any[]>([]);
   const [combos, setCombos] = useState<any[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
   const supabase = createClient();
   const companyId = "11111111-1111-1111-1111-111111111111";
 
@@ -72,7 +73,7 @@ export default function MenuPage() {
               <h2 className="text-lg font-semibold text-[#14213D]">
                 Elenco {tabs.find(t => t.id === activeTab)?.label}
               </h2>
-              <button onClick={() => setIsFormOpen(true)} className="flex items-center gap-2 bg-[#14213D] text-white px-3 py-1.5 rounded-md text-sm hover:bg-gray-800 transition-colors">
+              <button onClick={() => { setEditingItem(null); setIsFormOpen(true); }} className="flex items-center gap-2 bg-[#14213D] text-white px-3 py-1.5 rounded-md text-sm hover:bg-gray-800 transition-colors">
                 <Plus size={16} />
                 Aggiungi
               </button>
@@ -99,6 +100,9 @@ export default function MenuPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
+                    <button onClick={() => { setEditingItem(item); setIsFormOpen(true); }} className="text-blue-400 hover:text-blue-600 transition-colors">
+                      <Edit2 size={18} />
+                    </button>
                     <button onClick={() => deleteItem(item.id)} className="text-red-400 hover:text-red-600 transition-colors">
                       <Trash2 size={18} />
                     </button>
@@ -147,11 +151,11 @@ export default function MenuPage() {
       {isFormOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
-            <h2 className="text-xl font-bold mb-4">Nuovo Elemento in {tabs.find(t => t.id === activeTab)?.label}</h2>
+            <h2 className="text-xl font-bold mb-4">{editingItem ? "Modifica Elemento" : "Nuovo Elemento"} in {tabs.find(t => t.id === activeTab)?.label}</h2>
             <form onSubmit={async (e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
-              let base64Image = "";
+              let base64Image = editingItem?.image_url || "";
               
               const fileInput = fd.get("photo") as File;
               if (fileInput && fileInput.size > 0) {
@@ -164,27 +168,34 @@ export default function MenuPage() {
                  base64Image = 'data:' + fileInput.type + ';base64,' + btoa(binary);
               }
 
-              const { error } = await supabase.from('menu_items').insert({
+              const payload = {
                 company_id: companyId,
                 category: activeTab,
                 name: fd.get("name"),
                 allergens: fd.get("allergens"),
                 image_url: base64Image || null,
                 is_active: true,
-                sort_order: items.length
-              });
-              if (error) alert("Errore creazione: " + error.message);
+                sort_order: editingItem ? editingItem.sort_order : items.length
+              };
+
+              if (editingItem) {
+                 const { error } = await supabase.from('menu_items').update(payload).eq('id', editingItem.id);
+                 if (error) alert("Errore modifica: " + error.message);
+              } else {
+                 const { error } = await supabase.from('menu_items').insert(payload);
+                 if (error) alert("Errore creazione: " + error.message);
+              }
               setIsFormOpen(false);
               load();
             }}>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm mb-1">Nome</label>
-                  <input name="name" required className="w-full border p-2 rounded" placeholder="es. Penne al pomodoro" />
+                  <input name="name" defaultValue={editingItem?.name} required className="w-full border p-2 rounded" placeholder="es. Penne al pomodoro" />
                 </div>
                 <div>
                   <label className="block text-sm mb-1">Allergeni (opzionale)</label>
-                  <input name="allergens" className="w-full border p-2 rounded" placeholder="es. Glutine, Lattosio" />
+                  <input name="allergens" defaultValue={editingItem?.allergens} className="w-full border p-2 rounded" placeholder="es. Glutine, Lattosio" />
                 </div>
                 <div>
                   <label className="block text-sm mb-1">Foto Piatto</label>
@@ -193,7 +204,7 @@ export default function MenuPage() {
               </div>
               <div className="flex justify-end gap-3 mt-6">
                 <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 border rounded">Annulla</button>
-                <button type="submit" className="px-4 py-2 bg-[#14213D] text-white font-bold rounded">Crea Elemento</button>
+                <button type="submit" className="px-4 py-2 bg-[#14213D] text-white font-bold rounded">Salva Elemento</button>
               </div>
             </form>
           </div>
