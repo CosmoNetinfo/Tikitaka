@@ -1,14 +1,20 @@
-import AdminSidebar from "@/components/admin/AdminSidebar";
+"use client";
 
-export const metadata = {
-  title: 'Admin - Tiki Taka',
-};
+import { usePathname } from "next/navigation";
+import AdminSidebar from "@/components/admin/AdminSidebar";
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const isLoginPage = pathname === "/admin/login";
+
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="flex h-screen bg-gray-50 flex-col md:flex-row overflow-hidden">
       <AdminSidebar />
