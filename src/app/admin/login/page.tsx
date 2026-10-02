@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
-// import { supabase } from "@/lib/supabase/client"; // Un-comment when Supabase is set up
+import { createClient } from "@/lib/supabase/client";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -17,31 +17,21 @@ export default function AdminLogin() {
     setLoading(true);
     setError("");
 
-    // Simulate login for now
-    setTimeout(() => {
-      if (email === "admin@tikitaka.it" && password === "admin") {
-        router.push("/admin");
-      } else {
-        setError("Credenziali non valide");
-      }
-      setLoading(false);
-    }, 1000);
-
-    /* Real Supabase auth
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const supabase = createClient();
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
       router.push("/admin");
-    } catch (err: any) {
-      setError(err.message || "Errore durante il login");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Errore durante il login";
+      setError(message === "Invalid login credentials" ? "Credenziali non valide" : message);
     } finally {
       setLoading(false);
     }
-    */
   };
 
   return (
