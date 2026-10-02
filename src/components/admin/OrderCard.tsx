@@ -18,8 +18,10 @@ interface OrderCardProps {
   onStatusChange?: (id: string, newStatus: OrderStatus) => void;
 }
 
+import { formatCurrency } from "@/lib/utils/format";
+
 export default function OrderCard({ order, onStatusChange }: OrderCardProps) {
-  const formatPrice = (cents: number) => `€ ${(cents / 100).toFixed(2)}`;
+  const formatPrice = (cents: number) => formatCurrency(cents);
 
   const statusConfig = {
     paid_card: { label: "💳 PAGATO", color: "bg-green-100 text-green-800 border-green-200" },

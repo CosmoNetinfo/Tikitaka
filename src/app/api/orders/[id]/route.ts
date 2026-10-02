@@ -65,7 +65,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       specialItemsDb = dbItems || []
     }
     
-    const { total_cents, order_lines } = await calculateOrderTotal({
+    const { data: dbCombos } = await supabase.from('combos').select('*').eq('is_active', true)
+
+    const pricingResult = calculateOrderTotal({
       combo: hasCombo ? {
         primo_formato: data.primo_formato,
         primo_condimento: data.primo_condimento,
@@ -77,12 +79,26 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         id: si.id,
         qty: si.qty,
         dbItem: specialItemsDb.find(d => d.id === si.id)
-      }))
+      })),
+      combos: dbCombos || undefined
     })
+
+    if (!pricingResult.valid) {
+      return NextResponse.json({ error: pricingResult.error || 'Combinazione non valida' }, { status: 400 })
+    }
+
+    const { total_cents, subtotal_cents, order_lines, combo: matchedCombo } = pricingResult
     
     // Update order
     const updateData: any = {
       total_cents,
+      subtotal_cents,
+      combo_id: matchedCombo?.id || null,
+      primo_formato: data.primo_formato || null,
+      primo_condimento: data.primo_condimento || null,
+      secondo: data.secondo || null,
+      contorno: data.contorno || null,
+      drink: data.drink || null,
       notes: data.notes !== undefined ? data.notes : order.notes
     }
     if (data.slot_id) updateData.slot_id = data.slot_id

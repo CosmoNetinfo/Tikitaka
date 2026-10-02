@@ -7,6 +7,7 @@ import BackButton from '@/components/ui/BackButton';
 import { useOrderStore } from '@/store/orderStore';
 
 import { createClient } from '@/lib/supabase/client';
+import { calculateOrderTotal, formatCurrency, DEFAULT_COMBOS, ComboRow } from '@/lib/utils/pricing';
 
 interface MenuData {
   primoFormatos: string[];
@@ -27,15 +28,21 @@ export default function BuildMeal({ params }: { params: { date: string, slotId: 
   const order = useOrderStore();
   
   const [menu, setMenu] = useState<MenuData | null>(null);
+  const [combos, setCombos] = useState<ComboRow[]>(DEFAULT_COMBOS);
 
   useEffect(() => {
     const fetchMenu = async () => {
       try {
         const supabase = createClient();
-        const [{ data: menuItems }, { data: specialItems }] = await Promise.all([
+        const [{ data: menuItems }, { data: specialItems }, { data: combosData }] = await Promise.all([
           supabase.from('menu_items').select('*').eq('is_active', true).order('sort_order'),
-          supabase.from('special_items').select('*').eq('is_active', true).order('name')
+          supabase.from('special_items').select('*').eq('is_active', true).order('name'),
+          supabase.from('combos').select('*').eq('is_active', true)
         ]);
+
+        if (combosData && combosData.length > 0) {
+          setCombos(combosData as ComboRow[]);
+        }
 
         const primoFormatos = menuItems?.filter(i => i.category === 'primo_formato').map(i => i.name) || [];
         const primoCondimentos = menuItems?.filter(i => i.category === 'primo_condimento').map(i => i.name) || [];
@@ -55,7 +62,7 @@ export default function BuildMeal({ params }: { params: { date: string, slotId: 
           primoCondimentos: primoCondimentos.length > 0 ? primoCondimentos : ['Pomodoro e basilico', 'Pesto genovese', 'Cacio e pepe'],
           secondos: secondos.length > 0 ? secondos : ['Coscetti di pollo', 'Polpette al pomodoro', 'Spezzatino in agrodolce'],
           contornos: contornos.length > 0 ? contornos : ['Insalata verde', 'Patate al forno'],
-          drinks: drinks.length > 0 ? drinks : ['Coca Cola (+2,00 €)', 'Fanta (+2,00 €)', 'Acqua frizzante (+1,00 €)'],
+          drinks: drinks.length > 0 ? drinks : ['Coca-Cola', 'Fanta', 'Sprite'],
           fuoriMenu
         });
       } catch (err) {
@@ -66,47 +73,40 @@ export default function BuildMeal({ params }: { params: { date: string, slotId: 
     fetchMenu();
   }, []);
 
-  const isValid = useMemo(() => {
-    const hasPrimo = order.primo.formato && order.primo.condimento;
-    const hasSecondo = order.secondo;
-    const hasFuoriMenu = Object.values(order.specialItems).some(q => q > 0);
-    return hasPrimo || hasSecondo || hasFuoriMenu;
-  }, [order]);
+  const pricingResult = useMemo(() => {
+    const specialItemsList = menu?.fuoriMenu
+      ? Object.entries(order.specialItems)
+          .filter(([_, qty]) => qty > 0)
+          .map(([id, qty]) => {
+            const item = menu.fuoriMenu.find(i => i.id === id);
+            return { id, qty, price_cents: item?.price || 0 };
+          })
+      : [];
 
-  const totalPrice = useMemo(() => {
-    let total = 0;
-    const hasPrimo = order.primo.formato && order.primo.condimento;
-    const hasSecondo = order.secondo;
-    
-    // Base combo logic (mocked)
-    if (hasPrimo && hasSecondo) total += 900;
-    else if (hasPrimo) total += 600;
-    else if (hasSecondo) total += 700;
+    return calculateOrderTotal({
+      combo: {
+        primo_formato: order.primo.formato,
+        primo_condimento: order.primo.condimento,
+        secondo: order.secondo,
+        contorno: order.contorno,
+        drink: order.drink
+      },
+      special_items: specialItemsList,
+      combos
+    });
+  }, [order, menu, combos]);
 
-    // Extras
-    if (order.drink && order.drink.includes('+2')) total += 200;
-    if (order.drink && order.drink.includes('+1')) total += 100;
-
-    if (menu?.fuoriMenu) {
-      for (const [id, qty] of Object.entries(order.specialItems)) {
-        const item = menu.fuoriMenu.find(i => i.id === id);
-        if (item && qty > 0) total += item.price * qty;
-      }
-    }
-
-    return total;
-  }, [order, menu]);
+  const isValid = pricingResult.valid;
+  const totalPrice = pricingResult.total_cents;
 
   const comboName = useMemo(() => {
-    const parts = [];
-    if (order.primo.formato && order.primo.condimento) parts.push('Primo');
-    if (order.secondo) parts.push('Secondo');
-    if (order.contorno) parts.push('Contorno');
-    
-    let base = parts.length > 0 ? parts.join(' + ') : 'Solo extra';
-    if (parts.length > 0) base += ' + Acqua';
-    return base;
-  }, [order]);
+    if (pricingResult.combo) {
+      return pricingResult.combo.label;
+    }
+    const hasSpecial = Object.values(order.specialItems).some(q => q > 0);
+    if (hasSpecial) return 'Solo fuori menu';
+    return 'Seleziona i piatti';
+  }, [pricingResult, order.specialItems]);
 
   if (!menu) return <div className="p-8 text-center">Caricamento menu...</div>;
 
@@ -223,13 +223,14 @@ export default function BuildMeal({ params }: { params: { date: string, slotId: 
               <button 
                 key={d}
                 onClick={() => order.setDrink(order.drink === d ? null : d)}
-                className={`py-3 px-4 rounded-xl text-sm font-medium border-2 text-left transition-colors ${
+                className={`py-3 px-4 rounded-xl text-sm font-medium border-2 text-left transition-colors flex justify-between items-center ${
                   order.drink === d 
                     ? 'bg-[#14213D] text-white border-[#14213D]' 
                     : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
                 }`}
               >
-                {d}
+                <span>{d}</span>
+                <span className={`text-xs font-semibold ${order.drink === d ? 'text-[#FFC300]' : 'text-gray-500'}`}>+2,00 €</span>
               </button>
             ))}
           </div>
@@ -252,7 +253,7 @@ export default function BuildMeal({ params }: { params: { date: string, slotId: 
                     )}
                     <div>
                       <div className="font-bold text-[#14213D]">{item.name}</div>
-                      <div className="text-sm font-semibold text-[#FFC300]">{(item.price / 100).toFixed(2)} €</div>
+                      <div className="text-sm font-semibold text-[#FFC300]">{formatCurrency(item.price)}</div>
                     </div>
                   </div>
                   
@@ -280,7 +281,7 @@ export default function BuildMeal({ params }: { params: { date: string, slotId: 
           <div className="flex-1 mr-4">
             <div className="text-xs font-semibold text-gray-500 truncate">{comboName}</div>
             <div className="text-xl font-black text-[#14213D]">
-              Totale: {(totalPrice / 100).toFixed(2)} €
+              Totale: {formatCurrency(totalPrice)}
             </div>
           </div>
           
@@ -298,7 +299,7 @@ export default function BuildMeal({ params }: { params: { date: string, slotId: 
         </div>
         {!isValid && (
           <div className="text-xs text-red-500 mt-2 font-medium text-center">
-            Seleziona almeno un piatto per continuare
+            {pricingResult.error || 'Seleziona almeno un piatto per continuare'}
           </div>
         )}
       </div>

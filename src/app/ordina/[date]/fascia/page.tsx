@@ -6,6 +6,8 @@ import Header from '@/components/ui/Header';
 import BackButton from '@/components/ui/BackButton';
 import { useOrderStore } from '@/store/orderStore';
 
+import { formatDateItalian } from '@/lib/utils/format';
+
 interface Slot {
   id: string;
   name: string;
@@ -19,9 +21,9 @@ export default function SelectSlot({ params }: { params: { date: string } }) {
   const [loading, setLoading] = useState(true);
 
   const slots: Slot[] = [
-    { id: '1', name: 'Primo turno', time: '12:00' },
-    { id: '2', name: 'Secondo turno', time: '12:30' },
-    { id: '3', name: 'Terzo turno', time: '13:00' },
+    { id: '6cd9df29-0428-4183-b7a2-7ac28dcde53f', name: 'Primo turno', time: '12:00' },
+    { id: '35afeaef-4731-44f9-96f5-0ed5f6d1a288', name: 'Secondo turno', time: '12:30' },
+    { id: '08f0d25d-8453-46ca-867b-e8b3b3cf4019', name: 'Terzo turno', time: '13:00' },
   ];
 
   useEffect(() => {
@@ -38,11 +40,7 @@ export default function SelectSlot({ params }: { params: { date: string } }) {
     router.push(`/ordina/${params.date}/${slotId}/pranzo`);
   };
 
-  const formattedDate = new Date(params.date).toLocaleDateString('it-IT', { 
-    weekday: 'long', 
-    day: 'numeric', 
-    month: 'long' 
-  });
+  const formattedDate = formatDateItalian(params.date);
 
   return (
     <div className="flex flex-col min-h-screen pb-safe">
@@ -55,7 +53,7 @@ export default function SelectSlot({ params }: { params: { date: string } }) {
           <h1 className="text-2xl font-bold text-[#14213D] mb-1">
             Scegli la fascia oraria
           </h1>
-          <p className="text-gray-600 capitalize">{formattedDate}</p>
+          <p className="text-gray-600">{formattedDate}</p>
         </div>
 
         <div className="space-y-4">

@@ -104,8 +104,10 @@ export async function POST(request: NextRequest) {
       specialItemsDb = dbItems
     }
     
-    // 9. Recalculate price
-    const { total_cents, order_lines } = await calculateOrderTotal({
+    // 9. Recalculate price from combos table
+    const { data: dbCombos } = await supabase.from('combos').select('*').eq('is_active', true)
+
+    const pricingResult = calculateOrderTotal({
       combo: hasCombo ? {
         primo_formato: data.primo_formato,
         primo_condimento: data.primo_condimento,
@@ -117,8 +119,15 @@ export async function POST(request: NextRequest) {
         id: si.id,
         qty: si.qty,
         dbItem: specialItemsDb.find(d => d.id === si.id)
-      }))
+      })),
+      combos: dbCombos || undefined
     })
+
+    if (!pricingResult.valid) {
+      return NextResponse.json({ error: pricingResult.error || 'Combinazione non valida' }, { status: 400 })
+    }
+
+    const { total_cents, subtotal_cents, order_lines, combo: matchedCombo } = pricingResult
     
     // 10. Public code
     const publicCode = nanoid()
@@ -128,7 +137,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Pagamenti con carta non abilitati' }, { status: 400 })
     }
     
-    const status = data.payment_method === 'cash' ? 'cash_pending' : 'pending_payment'
+    const paymentStatus = data.payment_method === 'cash' ? 'cash_pending' : 'pending_payment'
     
     const { data: newOrder, error: insertError } = await supabase
       .from('orders')
@@ -140,11 +149,18 @@ export async function POST(request: NextRequest) {
         customer_last_name: data.customer_last_name,
         notes: data.notes,
         client_token: data.client_token,
-        payment_method: data.payment_method,
-        payment_status: status,
+        combo_id: matchedCombo?.id || null,
+        primo_formato: data.primo_formato || null,
+        primo_condimento: data.primo_condimento || null,
+        secondo: data.secondo || null,
+        contorno: data.contorno || null,
+        drink: data.drink || null,
+        subtotal_cents,
         total_cents,
+        payment_method: data.payment_method,
+        payment_status: paymentStatus,
         public_code: publicCode,
-        status: 'confirmed'
+        status: 'active'
       })
       .select()
       .single()

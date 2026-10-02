@@ -5,11 +5,15 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/ui/Header';
 import BackButton from '@/components/ui/BackButton';
 import { useOrderStore } from '@/store/orderStore';
+import { createClient } from '@/lib/supabase/client';
+import { calculateOrderTotal, formatCurrency, DEFAULT_COMBOS, ComboRow } from '@/lib/utils/pricing';
 
 export default function Summary({ params }: { params: { date: string, slotId: string } }) {
   const router = useRouter();
   const order = useOrderStore();
   const [mounted, setMounted] = useState(false);
+  const [combos, setCombos] = useState<ComboRow[]>(DEFAULT_COMBOS);
+  const [specialItemsList, setSpecialItemsList] = useState<any[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -22,32 +26,43 @@ export default function Summary({ params }: { params: { date: string, slotId: st
         cognome: savedSurname || ''
       });
     }
+
+    async function loadPricingData() {
+      try {
+        const supabase = createClient();
+        const [{ data: cData }, { data: sData }] = await Promise.all([
+          supabase.from('combos').select('*').eq('is_active', true),
+          supabase.from('special_items').select('*').eq('is_active', true)
+        ]);
+        if (cData && cData.length > 0) setCombos(cData as ComboRow[]);
+        if (sData) setSpecialItemsList(sData);
+      } catch (e) {
+        console.error('Error loading pricing data:', e);
+      }
+    }
+    loadPricingData();
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     order.setCustomerInfo({ [e.target.name]: e.target.value });
   };
 
-  const calculateTotal = () => {
-    let total = 0;
-    const hasPrimo = order.primo.formato && order.primo.condimento;
-    const hasSecondo = order.secondo;
-    
-    if (hasPrimo && hasSecondo) total += 900;
-    else if (hasPrimo) total += 600;
-    else if (hasSecondo) total += 700;
-
-    if (order.drink && order.drink.includes('+2')) total += 200;
-    if (order.drink && order.drink.includes('+1')) total += 100;
-
-    // Hardcode fuori menu price for demo since it's not saved in store
-    const fmPrice = 700; // Mock price
-    for (const [id, qty] of Object.entries(order.specialItems)) {
-      if (qty > 0) total += fmPrice * qty;
-    }
-
-    return total;
-  };
+  const pricingResult = calculateOrderTotal({
+    combo: {
+      primo_formato: order.primo.formato,
+      primo_condimento: order.primo.condimento,
+      secondo: order.secondo,
+      contorno: order.contorno,
+      drink: order.drink
+    },
+    special_items: Object.entries(order.specialItems)
+      .filter(([_, qty]) => qty > 0)
+      .map(([id, qty]) => {
+        const item = specialItemsList.find(s => s.id === id);
+        return { id, qty, price_cents: item?.price_cents || 700 };
+      }),
+    combos
+  });
 
   const handleProceed = () => {
     localStorage.setItem('tikitaka_nome', order.customer.nome);
@@ -55,8 +70,8 @@ export default function Summary({ params }: { params: { date: string, slotId: st
     router.push(`/ordina/${params.date}/${params.slotId}/pagamento`);
   };
 
-  const total = calculateTotal();
-  const isFormValid = order.customer.nome.trim() && order.customer.cognome.trim();
+  const total = pricingResult.total_cents;
+  const isFormValid = order.customer.nome.trim() && order.customer.cognome.trim() && pricingResult.valid;
 
   if (!mounted) return null;
 
@@ -72,6 +87,11 @@ export default function Summary({ params }: { params: { date: string, slotId: st
           <h2 className="text-lg font-black text-[#14213D] mb-4 border-b pb-2">Il tuo pranzo</h2>
           
           <ul className="space-y-3 mb-4 text-gray-700">
+            {pricingResult.combo && (
+              <li className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                Combinazione: {pricingResult.combo.label}
+              </li>
+            )}
             {order.primo.formato && order.primo.condimento && (
               <li><span className="font-semibold text-[#14213D]">Primo:</span> {order.primo.formato} - {order.primo.condimento}</li>
             )}
@@ -83,13 +103,19 @@ export default function Summary({ params }: { params: { date: string, slotId: st
             )}
             <li><span className="font-semibold text-[#14213D]">Acqua:</span> Inclusa</li>
             {order.drink && (
-              <li><span className="font-semibold text-[#14213D]">Bibita extra:</span> {order.drink}</li>
+              <li><span className="font-semibold text-[#14213D]">Bibita extra:</span> {order.drink} (+2,00 €)</li>
             )}
+            {Object.entries(order.specialItems).filter(([_, q]) => q > 0).map(([id, qty]) => {
+              const item = specialItemsList.find(s => s.id === id);
+              return (
+                <li key={id}><span className="font-semibold text-[#14213D]">Fuori menu:</span> {qty}x {item?.name || 'Piatto speciale'} ({formatCurrency((item?.price_cents || 700) * qty)})</li>
+              );
+            })}
           </ul>
           
           <div className="flex justify-between items-center border-t pt-4 mt-2">
-            <span className="font-bold text-gray-600">Totale provvisorio</span>
-            <span className="text-xl font-black text-[#14213D]">{(total / 100).toFixed(2)} €</span>
+            <span className="font-bold text-gray-600">Totale</span>
+            <span className="text-xl font-black text-[#14213D]">{formatCurrency(total)}</span>
           </div>
         </div>
 

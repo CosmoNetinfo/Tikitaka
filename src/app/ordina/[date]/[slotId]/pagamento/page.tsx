@@ -1,56 +1,127 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/ui/Header';
 import BackButton from '@/components/ui/BackButton';
 import { useOrderStore } from '@/store/orderStore';
+import { createClient } from '@/lib/supabase/client';
+import { calculateOrderTotal, formatCurrency, DEFAULT_COMBOS, ComboRow } from '@/lib/utils/pricing';
 
-export default function Payment() {
+export default function Payment({ params }: { params: { date: string, slotId: string } }) {
   const router = useRouter();
   const order = useOrderStore();
   const [loading, setLoading] = useState(false);
+  const [combos, setCombos] = useState<ComboRow[]>(DEFAULT_COMBOS);
+  const [specialItemsList, setSpecialItemsList] = useState<any[]>([]);
 
-  const calculateTotal = () => {
-    let total = 0;
-    const hasPrimo = order.primo.formato && order.primo.condimento;
-    const hasSecondo = order.secondo;
-    
-    if (hasPrimo && hasSecondo) total += 900;
-    else if (hasPrimo) total += 600;
-    else if (hasSecondo) total += 700;
-
-    if (order.drink && order.drink.includes('+2')) total += 200;
-    if (order.drink && order.drink.includes('+1')) total += 100;
-
-    const fmPrice = 700;
-    for (const [id, qty] of Object.entries(order.specialItems)) {
-      if (qty > 0) total += fmPrice * qty;
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const supabase = createClient();
+        const [{ data: cData }, { data: sData }] = await Promise.all([
+          supabase.from('combos').select('*').eq('is_active', true),
+          supabase.from('special_items').select('*').eq('is_active', true)
+        ]);
+        if (cData && cData.length > 0) setCombos(cData as ComboRow[]);
+        if (sData) setSpecialItemsList(sData);
+      } catch (e) {
+        console.error('Error loading combos:', e);
+      }
     }
+    loadData();
+  }, []);
 
-    return total;
-  };
+  const pricingResult = calculateOrderTotal({
+    combo: {
+      primo_formato: order.primo.formato,
+      primo_condimento: order.primo.condimento,
+      secondo: order.secondo,
+      contorno: order.contorno,
+      drink: order.drink
+    },
+    special_items: Object.entries(order.specialItems)
+      .filter(([_, qty]) => qty > 0)
+      .map(([id, qty]) => {
+        const item = specialItemsList.find(s => s.id === id);
+        return { id, qty, price_cents: item?.price_cents || 700 };
+      }),
+    combos
+  });
 
-  const total = calculateTotal();
+  const total = pricingResult.total_cents;
 
   const handleCashPayment = async () => {
     setLoading(true);
-    // Simulate API call to create order
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Generate mock order code
-    const mockCode = 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-    
-    // Save to local storage for "my orders" functionality
-    const myOrdersStr = localStorage.getItem('tikitaka_my_orders') || '[]';
-    const myOrders = JSON.parse(myOrdersStr);
-    myOrders.push(mockCode);
-    localStorage.setItem('tikitaka_my_orders', JSON.stringify(myOrders));
+    try {
+      const supabase = createClient();
+      let activeSlotId = params?.slotId;
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(activeSlotId);
+      if (!isUuid) {
+        const { data: slots } = await supabase.from('delivery_slots').select('*').eq('is_active', true).order('sort_order');
+        if (slots && slots.length > 0) {
+          const idx = parseInt(activeSlotId, 10) - 1;
+          activeSlotId = slots[idx >= 0 && idx < slots.length ? idx : 0].id;
+        }
+      }
 
-    // Clear store
-    order.resetOrder();
+      let clientToken = localStorage.getItem('tikitaka_client_token');
+      if (!clientToken) {
+        clientToken = 'tok_' + Math.random().toString(36).substring(2, 12);
+        localStorage.setItem('tikitaka_client_token', clientToken);
+      }
 
-    router.push(`/ordine/${mockCode}`);
+      const orderPayload = {
+        company_slug: 'tecnokar',
+        delivery_date: params.date,
+        slot_id: activeSlotId,
+        customer_first_name: order.customer.nome || 'Cliente',
+        customer_last_name: order.customer.cognome || 'Tecnokar',
+        notes: order.customer.note || '',
+        client_token: clientToken,
+        primo_formato: order.primo.formato || undefined,
+        primo_condimento: order.primo.condimento || undefined,
+        secondo: order.secondo || undefined,
+        contorno: order.contorno || undefined,
+        drink: order.drink || undefined,
+        special_items: Object.entries(order.specialItems)
+          .filter(([_, qty]) => qty > 0)
+          .map(([id, qty]) => ({ id, qty })),
+        payment_method: 'cash'
+      };
+
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload)
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        alert('Errore ordine: ' + (resData.error || 'Impossibile completare l\'ordine'));
+        setLoading(false);
+        return;
+      }
+
+      const orderCode = resData.order?.public_code;
+      
+      // Save to local storage for "my orders" functionality
+      const myOrdersStr = localStorage.getItem('tikitaka_my_orders') || '[]';
+      const myOrders = JSON.parse(myOrdersStr);
+      if (orderCode && !myOrders.includes(orderCode)) {
+        myOrders.push(orderCode);
+        localStorage.setItem('tikitaka_my_orders', JSON.stringify(myOrders));
+      }
+
+      // Clear store
+      order.resetOrder();
+
+      router.push(`/ordine/${orderCode}`);
+    } catch (err: any) {
+      console.error('Error creating cash order:', err);
+      alert('Si è verificato un errore durante la creazione dell\'ordine.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -67,7 +138,7 @@ export default function Payment() {
         <div className="bg-white rounded-3xl p-8 mb-10 shadow-sm border border-gray-100 w-full text-center">
           <p className="text-gray-500 font-medium mb-2">Totale da pagare</p>
           <div className="text-5xl font-black text-[#14213D]">
-            {(total / 100).toFixed(2)} €
+            {formatCurrency(total)}
           </div>
         </div>
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import DaySelector from "@/components/admin/DaySelector";
 import OrderCard, { OrderStatus } from "@/components/admin/OrderCard";
+import { formatCurrency } from "@/lib/utils/format";
 
 
 export default function OrdiniPage() {
@@ -117,7 +118,7 @@ export default function OrdiniPage() {
         </div>
         <div>
           <span className="text-gray-500">Incasso Totale:</span>
-          <span className="font-bold text-xl ml-2 text-green-600">€ {(totalAmount / 100).toFixed(2)}</span>
+          <span className="font-bold text-xl ml-2 text-green-600">{formatCurrency(totalAmount)}</span>
         </div>
       </div>
       

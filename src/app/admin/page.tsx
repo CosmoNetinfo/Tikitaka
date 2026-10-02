@@ -41,15 +41,15 @@ export default function AdminDashboard() {
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 border-t-4 border-t-purple-500">
           <h3 className="text-sm text-gray-500 font-medium">Incasso Previsto</h3>
-          <p className="text-2xl font-bold mt-1">€ 385,50</p>
+          <p className="text-2xl font-bold mt-1">385,50 €</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 border-t-4 border-t-green-500">
           <h3 className="text-sm text-gray-500 font-medium">Già Pagato (Carta)</h3>
-          <p className="text-2xl font-bold mt-1">€ 210,00</p>
+          <p className="text-2xl font-bold mt-1">210,00 €</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 border-t-4 border-t-red-500">
           <h3 className="text-sm text-gray-500 font-medium">Da Riscuotere</h3>
-          <p className="text-2xl font-bold mt-1">€ 175,50</p>
+          <p className="text-2xl font-bold mt-1">175,50 €</p>
         </div>
       </div>
 

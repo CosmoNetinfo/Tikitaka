@@ -1,11 +1,38 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Header from '@/components/ui/Header';
 import StatusBadge from '@/components/ui/StatusBadge';
+import { formatCurrency, formatDateItalian } from '@/lib/utils/format';
 
 export default function OrderConfirmation({ params }: { params: { publicCode: string } }) {
-  // Mock data for the confirmation page
-  const orderNumber = '#0048';
-  
+  const [order, setOrder] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadOrder() {
+      try {
+        const res = await fetch(`/api/orders/${params.publicCode}/detail`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.order) setOrder(data.order);
+        }
+      } catch (e) {
+        console.error('Error loading order detail:', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadOrder();
+  }, [params.publicCode]);
+
+  const orderNumber = order ? `#${String(order.order_number).padStart(4, '0')}` : '#0048';
+  const deliveryDateFormatted = order ? formatDateItalian(order.delivery_date) : 'Martedì 6 ottobre';
+  const slotLabel = order?.slot?.label || 'Primo turno (12:00)';
+  const companyName = order?.company?.name || 'Tecnokar';
+  const totalCents = order?.total_cents ?? 1500;
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 pb-safe">
       <Header />
@@ -35,12 +62,12 @@ export default function OrderConfirmation({ params }: { params: { publicCode: st
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <p className="text-sm text-gray-500 font-medium mb-1">Consegna</p>
-                  <p className="font-bold text-[#14213D]">Martedì 6 ottobre</p>
-                  <p className="text-[#14213D]">Primo turno (12:00)</p>
+                  <p className="font-bold text-[#14213D]">{deliveryDateFormatted}</p>
+                  <p className="text-[#14213D]">{slotLabel}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-500 font-medium mb-1">Luogo</p>
-                  <p className="font-bold text-[#14213D]">Tecnokar</p>
+                  <p className="font-bold text-[#14213D]">{companyName}</p>
                 </div>
               </div>
             </div>
@@ -48,22 +75,55 @@ export default function OrderConfirmation({ params }: { params: { publicCode: st
             <div className="mb-6">
               <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Riepilogo piatti</h3>
               <ul className="space-y-2 text-[#14213D] font-medium">
-                <li className="flex justify-between"><span>1x Menu Completo</span><span>9,00 €</span></li>
-                <li className="text-sm text-gray-500 ml-4">- Penne al pomodoro</li>
-                <li className="text-sm text-gray-500 ml-4">- Coscetti di pollo</li>
-                <li className="text-sm text-gray-500 ml-4">- Patate al forno</li>
-                <li className="flex justify-between mt-2"><span>1x Acqua Naturale</span><span>0,00 €</span></li>
+                {order ? (
+                  <>
+                    {(order.primo_formato || order.secondo) && (
+                      <li className="flex justify-between">
+                        <span>1x Menu</span>
+                        <span>{formatCurrency(order.subtotal_cents - (order.drink ? 200 : 0) - (order.order_lines?.reduce((a: number, l: any) => a + l.unit_price_cents * l.qty, 0) || 0))}</span>
+                      </li>
+                    )}
+                    {order.primo_formato && order.primo_condimento && (
+                      <li className="text-sm text-gray-500 ml-4">- {order.primo_formato} - {order.primo_condimento}</li>
+                    )}
+                    {order.secondo && (
+                      <li className="text-sm text-gray-500 ml-4">- {order.secondo}</li>
+                    )}
+                    {order.contorno && (
+                      <li className="text-sm text-gray-500 ml-4">- {order.contorno}</li>
+                    )}
+                    <li><span className="flex justify-between mt-2"><span>1x Acqua Naturale</span><span>0,00 €</span></span></li>
+                    {order.drink && (
+                      <li className="flex justify-between mt-1"><span>1x {order.drink}</span><span>2,00 €</span></li>
+                    )}
+                    {order.order_lines?.map((line: any) => (
+                      <li key={line.id} className="flex justify-between mt-1">
+                        <span>{line.qty}x {line.name_snapshot}</span>
+                        <span>{formatCurrency(line.unit_price_cents * line.qty)}</span>
+                      </li>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <li className="flex justify-between"><span>1x Menu Completo</span><span>13,00 €</span></li>
+                    <li className="text-sm text-gray-500 ml-4">- Linguine - Pomodoro e basilico</li>
+                    <li className="text-sm text-gray-500 ml-4">- Coscetti di pollo</li>
+                    <li className="text-sm text-gray-500 ml-4">- Patate al forno</li>
+                    <li className="flex justify-between mt-2"><span>1x Acqua Naturale</span><span>0,00 €</span></li>
+                    <li className="flex justify-between mt-1"><span>1x Coca-Cola</span><span>2,00 €</span></li>
+                  </>
+                )}
               </ul>
             </div>
 
             <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl mb-4">
               <span className="font-bold text-gray-600">Totale</span>
-              <span className="text-2xl font-black text-[#14213D]">9,00 €</span>
+              <span className="text-2xl font-black text-[#14213D]">{formatCurrency(totalCents)}</span>
             </div>
 
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-500">Stato pagamento</span>
-              <StatusBadge status="CONTANTI DA INCASSARE" />
+              <StatusBadge status={order?.payment_status === 'paid' ? 'PAGATO CON CARTA' : 'CONTANTI DA INCASSARE'} />
             </div>
           </div>
         </div>

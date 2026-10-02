@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Header from '@/components/ui/Header';
 import BackButton from '@/components/ui/BackButton';
 import StatusBadge from '@/components/ui/StatusBadge';
+import { formatCurrency } from '@/lib/utils/format';
 
 interface Order {
   id: string;
@@ -86,7 +87,7 @@ export default function MyOrders() {
                     <div className="text-sm text-gray-500 font-medium">{order.date}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-[#14213D]">{(order.total / 100).toFixed(2)} €</div>
+                    <div className="font-bold text-[#14213D]">{formatCurrency(order.total)}</div>
                   </div>
                 </div>
                 
