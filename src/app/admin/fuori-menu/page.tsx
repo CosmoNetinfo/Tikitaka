@@ -96,12 +96,26 @@ export default function FuoriMenuPage() {
             <form onSubmit={async (e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
+              let base64Image = editingItem?.image_url || "";
+              
+              const fileInput = fd.get("photo") as File;
+              if (fileInput && fileInput.size > 0) {
+                 const buffer = await fileInput.arrayBuffer();
+                 const bytes = new Uint8Array(buffer);
+                 let binary = '';
+                 for (let i = 0; i < bytes.byteLength; i++) {
+                     binary += String.fromCharCode(bytes[i]);
+                 }
+                 base64Image = 'data:' + fileInput.type + ';base64,' + btoa(binary);
+              }
+
               const payload = {
                 company_id: companyId,
                 name: fd.get("name"),
                 description: fd.get("desc"),
+                image_url: base64Image || null,
                 price_cents: Math.round(parseFloat(fd.get("price") as string) * 100),
-                available_dates: ['2026-10-06'], // Mock date for now
+                available_dates: ['2026-10-06'],
                 is_active: true
               };
               if (editingItem) {
@@ -124,6 +138,10 @@ export default function FuoriMenuPage() {
                 <div>
                   <label className="block text-sm mb-1">Prezzo (€)</label>
                   <input name="price" type="number" step="0.10" required defaultValue={editingItem ? (editingItem.price_cents / 100).toFixed(2) : ""} className="w-full border p-2 rounded" />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Foto Piatto</label>
+                  <input type="file" name="photo" accept="image/*" className="w-full border p-2 rounded text-sm" />
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-6">

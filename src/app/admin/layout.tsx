@@ -1,5 +1,9 @@
 import AdminSidebar from "@/components/admin/AdminSidebar";
 
+export const metadata = {
+  title: 'Admin - Tiki Taka',
+};
+
 export default function AdminLayout({
   children,
 }: {

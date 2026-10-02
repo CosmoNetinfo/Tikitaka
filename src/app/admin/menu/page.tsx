@@ -86,7 +86,13 @@ export default function MenuPage() {
                 <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-4">
                     <GripVertical className="text-gray-400 cursor-move" size={20} />
-                    <div className="w-12 h-12 bg-gray-200 rounded object-cover flex-shrink-0 flex items-center justify-center text-xs">Foto</div>
+                    <div className="w-12 h-12 bg-gray-100 rounded object-cover flex-shrink-0 flex items-center justify-center overflow-hidden">
+                      {item.image_url ? (
+                         <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                      ) : (
+                         <span className="text-xs text-gray-400">No Foto</span>
+                      )}
+                    </div>
                     <div>
                       <h4 className="font-medium text-[#14213D]">{item.name}</h4>
                       <p className="text-xs text-gray-500">Allergeni: {item.allergens || 'Nessuno'}</p>
@@ -145,11 +151,25 @@ export default function MenuPage() {
             <form onSubmit={async (e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
+              let base64Image = "";
+              
+              const fileInput = fd.get("photo") as File;
+              if (fileInput && fileInput.size > 0) {
+                 const buffer = await fileInput.arrayBuffer();
+                 const bytes = new Uint8Array(buffer);
+                 let binary = '';
+                 for (let i = 0; i < bytes.byteLength; i++) {
+                     binary += String.fromCharCode(bytes[i]);
+                 }
+                 base64Image = 'data:' + fileInput.type + ';base64,' + btoa(binary);
+              }
+
               await supabase.from('menu_items').insert({
                 company_id: companyId,
                 category: activeTab,
                 name: fd.get("name"),
                 allergens: fd.get("allergens"),
+                image_url: base64Image || null,
                 is_active: true,
                 sort_order: items.length
               });
@@ -164,6 +184,10 @@ export default function MenuPage() {
                 <div>
                   <label className="block text-sm mb-1">Allergeni (opzionale)</label>
                   <input name="allergens" className="w-full border p-2 rounded" placeholder="es. Glutine, Lattosio" />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Foto Piatto</label>
+                  <input type="file" name="photo" accept="image/*" className="w-full border p-2 rounded text-sm" />
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-6">
