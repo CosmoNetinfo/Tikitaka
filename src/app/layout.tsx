@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import AppWrapper from './AppWrapper';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -34,9 +35,9 @@ export default function RootLayout({
   return (
     <html lang="it">
       <body className={`${inter.className} min-h-screen bg-gray-50 flex flex-col`}>
-        <div className="max-w-lg mx-auto w-full bg-white min-h-screen flex flex-col shadow-sm relative">
+        <AppWrapper>
           {children}
-        </div>
+        </AppWrapper>
       </body>
     </html>
   );
