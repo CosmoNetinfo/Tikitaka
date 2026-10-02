@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export async function GET(request: NextRequest, { params }: { params: { publicCode: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const supabase = createAdminClient()
   try {
-    const { data: order, error } = await supabase
+    const codeOrId = params.id
+    // Query either by public_code or by uuid id
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(codeOrId)
+    
+    let query = supabase
       .from('orders')
       .select('*, company:companies(*, company_settings(*)), slot:delivery_slots(*), order_lines(*)')
-      .eq('public_code', params.publicCode)
-      .single()
+
+    if (isUuid) {
+      query = query.eq('id', codeOrId)
+    } else {
+      query = query.eq('public_code', codeOrId)
+    }
+
+    const { data: order, error } = await query.single()
 
     if (error || !order) return NextResponse.json({ error: 'Ordine non trovato' }, { status: 404 })
     
