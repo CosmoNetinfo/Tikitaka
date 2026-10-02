@@ -96,7 +96,10 @@ export default function MenuPage() {
                     </div>
                     <div>
                       <h4 className="font-medium text-[#14213D]">{item.name}</h4>
-                      <p className="text-xs text-gray-500">Allergeni: {item.allergens || 'Nessuno'}</p>
+                      <p className="text-xs text-gray-500">
+                        {item.price_cents != null && <span className="font-semibold text-[#14213D] mr-2">{(item.price_cents / 100).toFixed(2).replace('.', ',')} €</span>}
+                        Allergeni: {item.allergens || 'Nessuno'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -168,11 +171,15 @@ export default function MenuPage() {
                  base64Image = 'data:' + fileInput.type + ';base64,' + btoa(binary);
               }
 
+              const priceStr = fd.get("price") as string;
+              const priceCents = priceStr && priceStr.trim() !== '' ? Math.round(parseFloat(priceStr.replace(',', '.')) * 100) : null;
+
               const payload = {
                 company_id: companyId,
                 category: activeTab,
                 name: fd.get("name"),
                 allergens: fd.get("allergens"),
+                price_cents: isNaN(priceCents as number) ? null : priceCents,
                 image_url: base64Image || null,
                 is_active: true,
                 sort_order: editingItem ? editingItem.sort_order : items.length
@@ -196,6 +203,10 @@ export default function MenuPage() {
                 <div>
                   <label className="block text-sm mb-1">Allergeni (opzionale)</label>
                   <input name="allergens" defaultValue={editingItem?.allergens} className="w-full border p-2 rounded" placeholder="es. Glutine, Lattosio" />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Prezzo € (opzionale)</label>
+                  <input name="price" type="text" inputMode="decimal" defaultValue={editingItem?.price_cents != null ? (editingItem.price_cents / 100).toFixed(2).replace('.', ',') : ''} className="w-full border p-2 rounded" placeholder="es. 5,00" />
                 </div>
                 <div>
                   <label className="block text-sm mb-1">Foto Piatto</label>

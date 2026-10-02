@@ -47,6 +47,7 @@ create table menu_items (
   name text not null,
   image_url text,
   allergens text,
+  price_cents int default null,
   sort_order int default 0,
   is_active boolean default true
 );

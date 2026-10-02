@@ -122,6 +122,7 @@ export interface Database {
           name: string
           image_url: string | null
           allergens: string | null
+          price_cents: number | null
           sort_order: number | null
           is_active: boolean | null
         }
@@ -132,6 +133,7 @@ export interface Database {
           name: string
           image_url?: string | null
           allergens?: string | null
+          price_cents?: number | null
           sort_order?: number | null
           is_active?: boolean | null
         }
@@ -142,6 +144,7 @@ export interface Database {
           name?: string
           image_url?: string | null
           allergens?: string | null
+          price_cents?: number | null
           sort_order?: number | null
           is_active?: boolean | null
         }

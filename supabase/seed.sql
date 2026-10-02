@@ -32,25 +32,25 @@ insert into delivery_slots (company_id, label, delivery_time, sort_order) values
 ('11111111-1111-1111-1111-111111111111', 'Terzo turno 13:00', '13:00', 3);
 
 -- Menu items
-insert into menu_items (company_id, category, name, sort_order) values
+insert into menu_items (company_id, category, name, price_cents, sort_order) values
 -- Primo Formato
-('11111111-1111-1111-1111-111111111111', 'primo_formato', 'Linguine', 1),
-('11111111-1111-1111-1111-111111111111', 'primo_formato', 'Penne', 2),
+('11111111-1111-1111-1111-111111111111', 'primo_formato', 'Linguine', null, 1),
+('11111111-1111-1111-1111-111111111111', 'primo_formato', 'Penne', null, 2),
 -- Primo Condimento
-('11111111-1111-1111-1111-111111111111', 'primo_condimento', 'Pomodoro e basilico', 1),
-('11111111-1111-1111-1111-111111111111', 'primo_condimento', 'Pesto genovese', 2),
-('11111111-1111-1111-1111-111111111111', 'primo_condimento', 'Cacio e pepe', 3),
+('11111111-1111-1111-1111-111111111111', 'primo_condimento', 'Pomodoro e basilico', null, 1),
+('11111111-1111-1111-1111-111111111111', 'primo_condimento', 'Pesto genovese', null, 2),
+('11111111-1111-1111-1111-111111111111', 'primo_condimento', 'Cacio e pepe', null, 3),
 -- Secondo
-('11111111-1111-1111-1111-111111111111', 'secondo', 'Coscetti di pollo', 1),
-('11111111-1111-1111-1111-111111111111', 'secondo', 'Polpette al pomodoro', 2),
-('11111111-1111-1111-1111-111111111111', 'secondo', 'Spezzatino in agrodolce', 3),
+('11111111-1111-1111-1111-111111111111', 'secondo', 'Coscetti di pollo', null, 1),
+('11111111-1111-1111-1111-111111111111', 'secondo', 'Polpette al pomodoro', null, 2),
+('11111111-1111-1111-1111-111111111111', 'secondo', 'Spezzatino in agrodolce', null, 3),
 -- Contorno
-('11111111-1111-1111-1111-111111111111', 'contorno', 'Insalata verde', 1),
-('11111111-1111-1111-1111-111111111111', 'contorno', 'Patate al forno', 2),
+('11111111-1111-1111-1111-111111111111', 'contorno', 'Insalata verde', null, 1),
+('11111111-1111-1111-1111-111111111111', 'contorno', 'Patate al forno', null, 2),
 -- Bibita
-('11111111-1111-1111-1111-111111111111', 'bibita', 'Coca-Cola', 1),
-('11111111-1111-1111-1111-111111111111', 'bibita', 'Fanta', 2),
-('11111111-1111-1111-1111-111111111111', 'bibita', 'Sprite', 3);
+('11111111-1111-1111-1111-111111111111', 'bibita', 'Coca-Cola', 200, 1),
+('11111111-1111-1111-1111-111111111111', 'bibita', 'Fanta', 200, 2),
+('11111111-1111-1111-1111-111111111111', 'bibita', 'Sprite', 200, 3);
 
 -- Combos
 insert into combos (company_id, label, has_primo, has_secondo, has_contorno, price_cents) values
