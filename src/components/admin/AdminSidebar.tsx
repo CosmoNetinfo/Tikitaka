@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Menu, X, LogOut, LayoutDashboard, UtensilsCrossed, Settings, ListOrdered, CalendarDays } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -15,17 +17,20 @@ const navItems = [
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
-    // TODO: Implement Supabase sign out
-    console.log("Logout");
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/admin/login");
   };
 
   return (
     <>
-      <div className="md:hidden flex items-center justify-between bg-[#14213D] p-4 text-white">
-        <span className="font-bold text-xl">TIKI TAKA Admin</span>
+      {/* Mobile top bar */}
+      <div className="md:hidden flex items-center justify-between bg-[#14213D] px-4 py-2 text-white">
+        <Image src="/logo.png" alt="Tiki Taka" width={140} height={47} className="h-10 w-auto brightness-0 invert" />
         <button onClick={() => setIsOpen(!isOpen)} className="text-white">
           {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -36,9 +41,10 @@ export default function AdminSidebar() {
           isOpen ? "translate-x-0" : "-translate-x-full"
         } md:relative md:translate-x-0 transition duration-200 ease-in-out w-64 bg-[#14213D] text-white flex flex-col z-50`}
       >
-        <div className="p-6 hidden md:block">
-          <h1 className="text-2xl font-bold text-[#FFC300]">TIKI TAKA</h1>
-          <p className="text-sm text-gray-400">Pannello Amministratore</p>
+        {/* Desktop logo */}
+        <div className="p-5 hidden md:flex flex-col items-center border-b border-white/10">
+          <Image src="/logo.png" alt="Tiki Taka" width={180} height={60} className="w-40 h-auto brightness-0 invert" />
+          <p className="text-xs text-gray-400 mt-1">Pannello Amministratore</p>
         </div>
 
         <nav className="flex-1 px-4 mt-6 md:mt-0 space-y-2">

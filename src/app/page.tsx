@@ -1,13 +1,21 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
   return (
     <main className="flex-1 flex flex-col items-center justify-center p-6 text-center h-full min-h-screen">
       <div className="flex-1 flex flex-col items-center justify-center w-full">
-        <h1 className="text-5xl font-black tracking-tighter text-[#14213D] mb-8">
-          TIKI TAKA
-        </h1>
-        
+        <div className="mb-8">
+          <Image
+            src="/logo.png"
+            alt="Tiki Taka"
+            width={340}
+            height={113}
+            priority
+            className="w-72 h-auto mx-auto"
+          />
+        </div>
+
         <p className="text-xl font-medium text-gray-800 mb-12 max-w-xs mx-auto">
           Benvenuto! Ordina il tuo pranzo e ricevilo direttamente in azienda.
         </p>

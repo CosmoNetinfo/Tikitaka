@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AdminLogin() {
@@ -36,12 +37,20 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-[#14213D]">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md flex flex-col items-center">
+        <Image
+          src="/logo.png"
+          alt="Tiki Taka"
+          width={280}
+          height={93}
+          priority
+          className="w-56 h-auto mb-6"
+        />
+        <h2 className="text-center text-2xl font-bold text-[#14213D]">
           Area Riservata
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          TIKI TAKA Admin Panel
+        <p className="mt-1 text-center text-sm text-gray-500">
+          Pannello Amministratore
         </p>
       </div>
 
