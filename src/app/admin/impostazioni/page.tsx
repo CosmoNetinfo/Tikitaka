@@ -1,16 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { Save, Plus, Trash2 } from "lucide-react";
 
 export default function ImpostazioniPage() {
   const [showToast, setShowToast] = useState(false);
+  const [settings, setSettings] = useState<any>(null);
+  const [slots, setSlots] = useState<any[]>([]);
+  const supabase = createClient();
+  const COMPANY_ID = "11111111-1111-1111-1111-111111111111";
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    async function load() {
+      const { data: s } = await supabase.from('company_settings').select('*').eq('company_id', COMPANY_ID).single();
+      const { data: sl } = await supabase.from('delivery_slots').select('*').eq('company_id', COMPANY_ID).order('sort_order');
+      if (s) setSettings(s);
+      if (sl) setSlots(sl);
+    }
+    load();
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (settings) {
+      await supabase.from('company_settings').update(settings).eq('company_id', COMPANY_ID);
+    }
+    for (const slot of slots) {
+      if (slot.id) {
+        await supabase.from('delivery_slots').update(slot).eq('id', slot.id);
+      }
+    }
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
   };
+  
+  if (!settings) return <div>Caricamento...</div>;
 
   return (
     <div className="space-y-6 max-w-4xl pb-12">
@@ -49,30 +74,30 @@ export default function ImpostazioniPage() {
             <div className="space-y-4">
                <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Orario Limite Ordini (giorno precedente)</label>
-                <input type="time" defaultValue="14:00" className="w-full px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
+                <input type="time" value={settings.order_cutoff_time} onChange={e => setSettings({...settings, order_cutoff_time: e.target.value})} className="w-full px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
               </div>
                <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Orario Limite Annullamento (stesso giorno)</label>
-                <input type="time" defaultValue="09:00" className="w-full px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
+                <input type="time" value={settings.cancel_until_time} onChange={e => setSettings({...settings, cancel_until_time: e.target.value})} className="w-full px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
               </div>
             </div>
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Luogo di Consegna (Fisso)</label>
-              <input type="text" defaultValue="Piazzale Azienda, Via Roma 123" className="w-full px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
+              <input type="text" value={settings.delivery_point_text || ""} onChange={e => setSettings({...settings, delivery_point_text: e.target.value})} className="w-full px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
             </div>
             
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Fasce Orarie di Consegna (Turni)</label>
               <div className="space-y-2">
-                {[
-                  { label: "Primo Turno", time: "12:30" },
-                  { label: "Secondo Turno", time: "13:30" },
-                  { label: "Terzo Turno", time: "14:30" }
-                ].map((fascia, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <input type="text" defaultValue={fascia.label} className="w-1/3 px-3 py-2 border rounded-md" />
-                    <input type="time" defaultValue={fascia.time} className="w-32 px-3 py-2 border rounded-md" />
+                {slots.map((fascia, i) => (
+                  <div key={fascia.id || i} className="flex items-center gap-3">
+                    <input type="text" value={fascia.label} onChange={e => {
+    const ns = [...slots]; ns[i].label = e.target.value; setSlots(ns);
+  }} className="w-1/3 px-3 py-2 border rounded-md" />
+                    <input type="time" value={fascia.delivery_time} onChange={e => {
+    const ns = [...slots]; ns[i].delivery_time = e.target.value; setSlots(ns);
+  }} className="w-32 px-3 py-2 border rounded-md" />
                     <button type="button" className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={18}/></button>
                   </div>
                 ))}

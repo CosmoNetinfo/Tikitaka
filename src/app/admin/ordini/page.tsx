@@ -1,50 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import DaySelector from "@/components/admin/DaySelector";
 import OrderCard, { OrderStatus } from "@/components/admin/OrderCard";
 
-// Mock data
-const mockOrders = [
-  {
-    id: "1",
-    number: "0048",
-    customerName: "Mario Rossi",
-    company: "Acme Corp",
-    timeSlot: "13:30",
-    items: ["Menu Completo: Linguine Pomodoro, Coscetti di pollo, Patate al forno, Acqua"],
-    totalCents: 1200,
-    status: "paid_card" as OrderStatus,
-  },
-  {
-    id: "2",
-    number: "0049",
-    customerName: "Giulia Bianchi",
-    company: "Tech Solutions",
-    timeSlot: "12:30",
-    items: ["Fuori Menu: Insalatona Tonno", "Coca-Cola"],
-    totalCents: 850,
-    status: "cash_pending" as OrderStatus,
-    notes: "Senza cipolla",
-  },
-  {
-    id: "3",
-    number: "0050",
-    customerName: "Luca Verdi",
-    company: "Studio Legale",
-    timeSlot: "14:30",
-    items: ["Menu Primo: Penne Cacio e pepe, Acqua"],
-    totalCents: 700,
-    status: "cancelled" as OrderStatus,
-  },
-];
 
 export default function OrdiniPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [slotFilter, setSlotFilter] = useState("all");
-  const [orders, setOrders] = useState(mockOrders);
+  const [orders, setOrders] = useState<any[]>([]);
+  const supabase = createClient();
 
-  const handleStatusChange = (id: string, newStatus: OrderStatus) => {
+  useEffect(() => {
+    async function load() {
+      // Create local date string safely
+      const dateStr = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      const { data } = await supabase.from('orders')
+        .select('*, slot:delivery_slots(*), combo:combos(*), order_lines(*)')
+        .eq('delivery_date', dateStr);
+      
+      if (data) {
+        const mapped = data.map((o: any) => {
+          let items: string[] = [];
+          if (o.combo) {
+             items.push(`${o.combo.label}: ${[o.primo_formato, o.primo_condimento, o.secondo, o.contorno, o.drink].filter(Boolean).join(', ')}`);
+          }
+          if (o.order_lines) {
+             o.order_lines.forEach((ol: any) => items.push(`${ol.qty}x ${ol.name_snapshot}`));
+          }
+          return {
+            id: o.id,
+            number: o.order_number.toString().padStart(4, '0'),
+            customerName: o.customer_first_name + ' ' + o.customer_last_name,
+            company: 'Azienda',
+            timeSlot: o.slot?.delivery_time || '',
+            items,
+            totalCents: o.total_cents,
+            status: o.status === 'cancelled' ? 'cancelled' : 
+                    o.payment_status === 'paid' ? 'paid_card' : 
+                    o.payment_status === 'cash_pending' ? 'cash_pending' :
+                    o.payment_status === 'cash_received' ? 'cash_received' : 'unpaid',
+            notes: o.notes
+          };
+        });
+        setOrders(mapped);
+      }
+    }
+    load();
+  }, [selectedDate]);
+
+  const handleStatusChange = async (id: string, newStatus: OrderStatus) => {
+    let update: any = {};
+    if (newStatus === 'cancelled') update = { status: 'cancelled' };
+    else if (newStatus === 'cash_received') update = { payment_status: 'cash_received' };
+    else if (newStatus === 'unpaid') update = { payment_status: 'unpaid' };
+    
+    await supabase.from('orders').update(update).eq('id', id);
     setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus } : o));
   };
 

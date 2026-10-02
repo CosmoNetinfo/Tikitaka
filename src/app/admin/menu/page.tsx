@@ -1,17 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { Edit2, Plus, GripVertical } from "lucide-react";
 
 export default function MenuPage() {
   const [activeTab, setActiveTab] = useState("formati");
+  const [items, setItems] = useState<any[]>([]);
+  const [combos, setCombos] = useState<any[]>([]);
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function load() {
+      const { data: i } = await supabase.from('menu_items').select('*').order('sort_order');
+      const { data: c } = await supabase.from('combos').select('*').order('id');
+      if (i) setItems(i);
+      if (c) setCombos(c);
+    }
+    load();
+  }, []);
 
   const tabs = [
-    { id: "formati", label: "Formati Pasta" },
-    { id: "condimenti", label: "Condimenti" },
-    { id: "secondi", label: "Secondi" },
-    { id: "contorni", label: "Contorni" },
-    { id: "bibite", label: "Bibite" },
+    { id: "primo_formato", label: "Formati Pasta" },
+    { id: "primo_condimento", label: "Condimenti" },
+    { id: "secondo", label: "Secondi" },
+    { id: "contorno", label: "Contorni" },
+    { id: "bibita", label: "Bibite" },
     { id: "prezzi", label: "Prezzi Combo" },
   ];
 
@@ -58,15 +72,14 @@ export default function MenuPage() {
             </div>
             
             <div className="space-y-3">
-              {/* Example List Items */}
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+              {items.filter(i => i.category === activeTab).map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-4">
                     <GripVertical className="text-gray-400 cursor-move" size={20} />
                     <div className="w-12 h-12 bg-gray-200 rounded object-cover flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-[#14213D]">Elemento di esempio {i}</h4>
-                      <p className="text-xs text-gray-500">Allergeni: Glutine, Lattosio</p>
+                      <h4 className="font-medium text-[#14213D]">{item.name}</h4>
+                      <p className="text-xs text-gray-500">Allergeni: {item.allergens || 'Nessuno'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -96,27 +109,19 @@ export default function MenuPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Menu Completo</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Primo + Secondo + Contorno + Acqua</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">
-                      <input type="number" defaultValue="12.00" step="0.50" className="w-20 px-2 py-1 border rounded" />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-900">Salva</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Menu Primo</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Primo + Acqua</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">
-                       <input type="number" defaultValue="7.00" step="0.50" className="w-20 px-2 py-1 border rounded" />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-900">Salva</button>
-                    </td>
-                  </tr>
-                </tbody>
+    {combos.map(combo => (
+      <tr key={combo.id}>
+        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{combo.label}</td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Combo</td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">
+          <input type="number" defaultValue={(combo.price_cents / 100).toFixed(2)} step="0.50" className="w-20 px-2 py-1 border rounded" />
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <button className="text-blue-600 hover:text-blue-900">Salva</button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
               </table>
             </div>
           </div>
