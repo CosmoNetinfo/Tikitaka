@@ -4,13 +4,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, LogOut, LayoutDashboard, UtensilsCrossed, Settings, ListOrdered, CalendarDays } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, UtensilsCrossed, Settings, ListOrdered, CalendarDays, MapPin } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Ordini", href: "/admin/ordini", icon: ListOrdered },
   { name: "Fuori Menu", href: "/admin/fuori-menu", icon: CalendarDays },
+  { name: "Sedi", href: "/admin/sedi", icon: MapPin },
   { name: "Menu e Prezzi", href: "/admin/menu", icon: UtensilsCrossed },
   { name: "Impostazioni", href: "/admin/impostazioni", icon: Settings },
 ];

@@ -111,21 +111,11 @@ export default function ImpostazioniPage() {
             
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Fasce Orarie di Consegna (Turni)</label>
-              <div className="space-y-2">
-                {slots.map((fascia, i) => (
-                  <div key={fascia.id || i} className="flex items-center gap-3">
-                    <input type="text" value={fascia.label} onChange={e => {
-    const ns = [...slots]; ns[i].label = e.target.value; setSlots(ns);
-  }} className="w-1/3 px-3 py-2 border rounded-md" />
-                    <input type="time" value={fascia.delivery_time} onChange={e => {
-    const ns = [...slots]; ns[i].delivery_time = e.target.value; setSlots(ns);
-  }} className="w-32 px-3 py-2 border rounded-md" />
-                    <button type="button" className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={18}/></button>
-                  </div>
-                ))}
-                <button type="button" className="text-sm flex items-center gap-1 text-blue-600 mt-2 font-medium">
-                  <Plus size={16} /> Aggiungi Fascia
-                </button>
+              <div className="space-y-2 p-4 bg-gray-50 border rounded-lg">
+                <p className="text-sm text-gray-600 mb-2">Gli orari di consegna e i giorni attivi sono ora gestiti per ogni sede.</p>
+                <a href="/admin/sedi" className="inline-block text-sm font-medium text-blue-600 hover:underline">
+                  Vai alla gestione Sedi &rarr;
+                </a>
               </div>
             </div>
           </div>
