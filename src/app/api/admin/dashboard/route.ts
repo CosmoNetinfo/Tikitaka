@@ -49,17 +49,16 @@ export async function GET(request: NextRequest) {
   try {
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('*, order_lines(*), slot:delivery_slots(*)')
+      .select('*, order_lines(*), slot:delivery_slots(*), site:sites(*)')
       .eq('company_id', companyId)
       .eq('delivery_date', date)
       .neq('status', 'cancelled')
 
     if (error) throw error
 
-    // Group by slot
-    const slotsMap: Record<string, any> = {}
-    
-    // Financials
+    // Group by site then slot
+    const sitesMap: Record<string, any> = {}
+
     let expected_revenue = 0
     let already_paid = 0
     let cash_pending = 0
@@ -78,9 +77,18 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      const siteId = order.site_id || 'unknown'
       const slotId = order.slot_id
-      if (!slotsMap[slotId]) {
-        slotsMap[slotId] = {
+
+      if (!sitesMap[siteId]) {
+        sitesMap[siteId] = {
+          site: order.site || { name: 'Sede Sconosciuta' },
+          slots: {}
+        }
+      }
+
+      if (!sitesMap[siteId].slots[slotId]) {
+        sitesMap[siteId].slots[slotId] = {
           slot: order.slot,
           orders: [],
           kitchen_summary: {
@@ -93,17 +101,18 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      slotsMap[slotId].orders.push(order)
+      const currentSlot = sitesMap[siteId].slots[slotId]
+      currentSlot.orders.push(order)
 
       // Kitchen summary logic
       order.order_lines.forEach((line: any) => {
-        const summary = slotsMap[slotId].kitchen_summary
+        const summary = currentSlot.kitchen_summary
         if (line.item_type === 'special_item') {
           const key = line.item_name
           summary.special_items[key] = (summary.special_items[key] || 0) + line.quantity
         } else {
           if (line.item_category === 'Primo') {
-            const key = line.item_name // expecting "formato - condimento"
+            const key = line.item_name
             summary.primi[key] = (summary.primi[key] || 0) + line.quantity
           } else if (line.item_category === 'Secondo') {
             summary.secondi[line.item_name] = (summary.secondi[line.item_name] || 0) + line.quantity
@@ -116,10 +125,15 @@ export async function GET(request: NextRequest) {
       })
     })
 
-    const orders_by_slot = Object.values(slotsMap).sort((a: any, b: any) => a.slot.time.localeCompare(b.slot.time))
+    const data_by_site = Object.values(sitesMap).map(site => {
+      return {
+        ...site,
+        slots: Object.values(site.slots).sort((a: any, b: any) => a.slot.time?.localeCompare(b.slot.time))
+      }
+    }).sort((a: any, b: any) => a.site.name.localeCompare(b.site.name))
 
     return NextResponse.json({
-      orders_by_slot,
+      data_by_site,
       financials: { expected_revenue, already_paid, cash_pending, cash_received }
     })
   } catch (error) {
