@@ -53,10 +53,9 @@ export default function SelectSite() {
                 className="w-full flex items-center justify-between p-6 rounded-2xl border-2 transition-all min-h-[100px] bg-white border-gray-100 hover:border-[#FFC300] shadow-sm active:scale-[0.98]"
               >
                 <div className="flex items-center space-x-4">
-                  {/* Assuming logo is available in public folder or we can use img */}
                   <img src="/tecnokar-logo.png" alt="Logo" className="h-10 w-auto object-contain mix-blend-multiply" />
-                  <div className="text-xl font-bold text-[#14213D]">
-                    {site.name}
+                  <div className="text-3xl font-black text-[#14213D]">
+                    {site.name.replace(/[^\d]/g, '') || site.name}
                   </div>
                 </div>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#FFC300]">
