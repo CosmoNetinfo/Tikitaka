@@ -16,6 +16,13 @@ create table companies (
   is_active boolean not null default true
 );
 
+
+create table sites (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  is_active boolean not null default true
+);
+
 create table company_settings (
   company_id uuid primary key references companies(id),
   order_cutoff_time time not null default '14:00',
@@ -33,6 +40,7 @@ create table company_settings (
 create table delivery_slots (
   id uuid primary key default gen_random_uuid(),
   company_id uuid references companies(id),
+  site_id uuid references sites(id),
   label text not null,
   delivery_time time not null,
   max_orders int,
@@ -43,6 +51,7 @@ create table delivery_slots (
 create table menu_items (
   id uuid primary key default gen_random_uuid(),
   company_id uuid references companies(id),
+  site_id uuid references sites(id),
   category text not null check (category in ('primo_formato','primo_condimento','secondo','contorno','bibita')),
   name text not null,
   image_url text,
@@ -55,6 +64,7 @@ create table menu_items (
 create table combos (
   id uuid primary key default gen_random_uuid(),
   company_id uuid references companies(id),
+  site_id uuid references sites(id),
   label text not null,
   has_primo boolean not null,
   has_secondo boolean not null,
@@ -66,6 +76,7 @@ create table combos (
 create table extras (
   id uuid primary key default gen_random_uuid(),
   company_id uuid references companies(id),
+  site_id uuid references sites(id),
   name text not null,
   price_cents int not null
 );
@@ -73,6 +84,7 @@ create table extras (
 create table special_items (
   id uuid primary key default gen_random_uuid(),
   company_id uuid references companies(id),
+  site_id uuid references sites(id),
   name text not null,
   description text,
   image_url text,
@@ -84,6 +96,7 @@ create table special_items (
 
 create table closed_days (
   company_id uuid references companies(id),
+  site_id uuid references sites(id),
   day date not null,
   reason text,
   primary key (company_id, day)
@@ -97,6 +110,8 @@ create table orders (
   public_code text unique not null,
   client_token text not null,
   company_id uuid not null references companies(id),
+  site_id uuid not null references sites(id),
+  site_snapshot text,
   delivery_date date not null,
   slot_id uuid not null references delivery_slots(id),
   customer_first_name text not null,
@@ -192,3 +207,7 @@ create policy "Admins full access closed_days" on closed_days to authenticated u
 create policy "Admins full access orders" on orders to authenticated using (exists (select 1 from admins where user_id = auth.uid()));
 create policy "Admins full access order_lines" on order_lines to authenticated using (exists (select 1 from admins where user_id = auth.uid()));
 create policy "Admins full access admins" on admins to authenticated using (exists (select 1 from admins where user_id = auth.uid()));
+
+alter table sites enable row level security;
+create policy "Public can read active sites" on sites for select using (is_active = true);
+create policy "Admins full access sites" on sites to authenticated using (exists (select 1 from admins where user_id = auth.uid()));

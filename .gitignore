@@ -36,3 +36,6 @@ tiki-taka/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+security-report.txt
+riepilogo-modifiche.md
+.env*
