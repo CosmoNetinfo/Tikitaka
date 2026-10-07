@@ -24,6 +24,7 @@ export default function ImpostazioniPage() {
           delivery_point_text: "Presso Tecnokar",
           order_cutoff_time: "14:00",
           cancel_until_time: "09:00",
+          delivery_weekdays: [1,2,3,4,5],
           issuer_name: "Tiki Taka di Laura Simonelli",
           issuer_vat: "04034150542",
           issuer_address: "Via dei Vetrai 58, 06049 Spoleto (PG)",
@@ -76,29 +77,61 @@ export default function ImpostazioniPage() {
       </div>
 
       <form className="space-y-8" onSubmit={handleSave}>
-        {/* Section 1: Orari e Consegna */}
         <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-[#14213D] mb-4 border-b pb-2">Orari e Operatività</h2>
+          <h2 className="text-lg font-semibold text-[#14213D] mb-4 border-b pb-2">Orari e Operatività Tiki Taka</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4 md:col-span-2">
-               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Orario Limite Ordini (giorno precedente)</label>
-                <input type="time" value={settings.order_cutoff_time} onChange={e => setSettings({...settings, order_cutoff_time: e.target.value})} className="w-full md:w-1/2 px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
+          <div className="space-y-6">
+            {/* Giorni di apertura globali */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Giorni di consegna settimanali</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: 1, label: "Lunedì" }, { id: 2, label: "Martedì" }, { id: 3, label: "Mercoledì" },
+                  { id: 4, label: "Giovedì" }, { id: 5, label: "Venerdì" }, { id: 6, label: "Sabato" }, { id: 7, label: "Domenica" }
+                ].map(g => {
+                  const isActive = (settings.delivery_weekdays || []).includes(g.id);
+                  return (
+                    <label key={g.id} className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer font-medium transition-colors select-none ${isActive ? 'bg-[#14213D] text-white border-[#14213D]' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'}`}>
+                      <input
+                        type="checkbox"
+                        className="hidden"
+                        checked={isActive}
+                        onChange={() => {
+                          const days = settings.delivery_weekdays || [];
+                          setSettings({
+                            ...settings,
+                            delivery_weekdays: isActive
+                              ? days.filter((d: number) => d !== g.id)
+                              : [...days, g.id].sort((a: number, b: number) => a - b)
+                          });
+                        }}
+                      />
+                      {g.label}
+                    </label>
+                  );
+                })}
               </div>
-               <div>
+              <p className="text-xs text-gray-400 mt-2">Questi sono i giorni in cui il Tiki Taka è aperto. Eccezioni (chiusure o aperture straordinarie) si gestiscono dal <a href="/admin/calendario" className="text-blue-500 hover:underline">Calendario</a>.</p>
+            </div>
+
+            {/* Orari limite */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Orario Limite Ordini (giorno precedente)</label>
+                <input type="time" value={settings.order_cutoff_time || '14:00'} onChange={e => setSettings({...settings, order_cutoff_time: e.target.value})} className="w-full px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Orario Limite Annullamento (stesso giorno)</label>
-                <input type="time" value={settings.cancel_until_time} onChange={e => setSettings({...settings, cancel_until_time: e.target.value})} className="w-full md:w-1/2 px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
+                <input type="time" value={settings.cancel_until_time || '09:00'} onChange={e => setSettings({...settings, cancel_until_time: e.target.value})} className="w-full px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
               </div>
             </div>
 
-            <div className="md:col-span-2 mt-4">
-              <div className="space-y-2 p-4 bg-gray-50 border rounded-lg">
-                <p className="text-sm text-gray-600 mb-2">I giorni di consegna, gli orari (turni) e i luoghi di consegna sono ora gestiti per ogni singola sede.</p>
-                <a href="/admin/sedi" className="inline-block text-sm font-medium text-blue-600 hover:underline">
-                  Vai alla gestione Sedi &rarr;
-                </a>
-              </div>
+            {/* Link alle sedi per gli orari turni */}
+            <div className="p-4 bg-gray-50 border rounded-lg">
+              <p className="text-sm text-gray-600">I <strong>punti di consegna</strong> (Tecnokar 1, 2, 3, 4) e i loro <strong>orari di turno</strong> si gestiscono separatamente.</p>
+              <a href="/admin/sedi" className="inline-block mt-1 text-sm font-medium text-blue-600 hover:underline">
+                Vai alla gestione Punti di Consegna (Sedi) &rarr;
+              </a>
             </div>
           </div>
         </section>
