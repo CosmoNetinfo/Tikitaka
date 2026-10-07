@@ -81,38 +81,20 @@ export default function ImpostazioniPage() {
           <h2 className="text-lg font-semibold text-[#14213D] mb-4 border-b pb-2">Orari e Operatività</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Giorni di consegna attivi</label>
-              <div className="flex flex-wrap gap-2">
-                {["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"].map((giorno, i) => (
-                  <label key={giorno} className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded border cursor-pointer hover:bg-gray-100">
-                    <input type="checkbox" defaultChecked={i < 5} className="rounded text-[#14213D] focus:ring-[#FFC300]" />
-                    <span className="text-sm">{giorno}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-4">
+            <div className="space-y-4 md:col-span-2">
                <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Orario Limite Ordini (giorno precedente)</label>
-                <input type="time" value={settings.order_cutoff_time} onChange={e => setSettings({...settings, order_cutoff_time: e.target.value})} className="w-full px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
+                <input type="time" value={settings.order_cutoff_time} onChange={e => setSettings({...settings, order_cutoff_time: e.target.value})} className="w-full md:w-1/2 px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
               </div>
                <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Orario Limite Annullamento (stesso giorno)</label>
-                <input type="time" value={settings.cancel_until_time} onChange={e => setSettings({...settings, cancel_until_time: e.target.value})} className="w-full px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
+                <input type="time" value={settings.cancel_until_time} onChange={e => setSettings({...settings, cancel_until_time: e.target.value})} className="w-full md:w-1/2 px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
               </div>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Luogo di Consegna (Fisso)</label>
-              <input type="text" value={settings.delivery_point_text || ""} onChange={e => setSettings({...settings, delivery_point_text: e.target.value})} className="w-full px-3 py-2 border rounded-md focus:ring-[#FFC300] focus:border-[#FFC300]" />
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Fasce Orarie di Consegna (Turni)</label>
+            <div className="md:col-span-2 mt-4">
               <div className="space-y-2 p-4 bg-gray-50 border rounded-lg">
-                <p className="text-sm text-gray-600 mb-2">Gli orari di consegna e i giorni attivi sono ora gestiti per ogni sede.</p>
+                <p className="text-sm text-gray-600 mb-2">I giorni di consegna, gli orari (turni) e i luoghi di consegna sono ora gestiti per ogni singola sede.</p>
                 <a href="/admin/sedi" className="inline-block text-sm font-medium text-blue-600 hover:underline">
                   Vai alla gestione Sedi &rarr;
                 </a>
