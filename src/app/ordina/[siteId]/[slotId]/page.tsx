@@ -12,13 +12,21 @@ export default function SelectDay() {
 
   useEffect(() => {
     const fetchDays = async () => {
-      // Dynamic days
-      setDays([
-        { date: '2026-10-06', dayName: 'Martedì', formattedDate: '6 ottobre 2026', isOpen: true },
-        { date: '2026-10-07', dayName: 'Mercoledì', formattedDate: '7 ottobre 2026', isOpen: true },
-        { date: '2026-10-08', dayName: 'Giovedì', formattedDate: '8 ottobre 2026', isOpen: false },
-        { date: '2026-10-09', dayName: 'Venerdì', formattedDate: '9 ottobre 2026', isOpen: true },
-      ]);
+      try {
+        const res = await fetch(`/api/availability?siteId=${params.siteId}`);
+        const data = await res.json();
+        if (data.availableDates) {
+          setDays(data.availableDates.map((d: any) => ({
+            date: d.date,
+            dayName: d.formattedDate.split(' ')[0], // Extract day name
+            formattedDate: d.formattedDate,
+            isOpen: d.isOpen,
+            reason: d.reason
+          })));
+        }
+      } catch (err) {
+        console.error(err);
+      }
       setLoading(false);
     };
     fetchDays();
@@ -58,8 +66,8 @@ export default function SelectDay() {
                   </div>
                 </div>
                 {!day.isOpen ? (
-                  <span className="bg-gray-200 text-gray-600 text-xs font-bold px-3 py-1.5 rounded-full">
-                    Chiusi
+                  <span className="bg-gray-200 text-gray-600 text-xs font-bold px-3 py-1.5 rounded-full text-center max-w-[120px]">
+                    {day.reason || 'Ordini chiusi'}
                   </span>
                 ) : (
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#FFC300]">

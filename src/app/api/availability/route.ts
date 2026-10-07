@@ -1,118 +1,88 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { toZonedTime, format } from 'date-fns-tz'
-import { addDays, isWeekend, parseISO, startOfDay, isBefore } from 'date-fns'
+export const dynamic = 'force-dynamic';
 
-function isCutoffPassed(deliveryDateStr: string, cutoffTime: string = '14:00'): boolean {
-  const TIMEZONE = 'Europe/Rome'
-  const now = new Date()
-  const nowZoned = toZonedTime(now, TIMEZONE)
-  
-  const deliveryDate = parseISO(deliveryDateStr)
-  let cutoffDate = addDays(deliveryDate, -1)
-  
-  // If delivery is Monday (1), cutoff is Saturday (6), which is 2 days before
-  if (deliveryDate.getDay() === 1) {
-    cutoffDate = addDays(deliveryDate, -2)
-  }
-  
-  const [hours, minutes] = cutoffTime.split(':').map(Number)
-  cutoffDate.setHours(hours, minutes, 0, 0)
-  
-  return isBefore(nowZoned, cutoffDate) === false // passed if now is after cutoff
-}
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { startOfDay, addDays, format, isBefore, isAfter, subDays } from 'date-fns';
+import { it } from 'date-fns/locale';
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  const companySlug = searchParams.get('company')
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const siteId = searchParams.get('siteId');
+  const companyId = searchParams.get('companyId') || '11111111-1111-1111-1111-111111111111';
 
-  if (!companySlug) {
-    return NextResponse.json({ error: 'Manca lo slug dell\'azienda' }, { status: 400 })
+  if (!siteId) {
+    return NextResponse.json({ error: 'siteId is required' }, { status: 400 });
   }
 
-  const supabase = createAdminClient()
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
-  try {
-    const { data: company, error: companyError } = await supabase
-      .from('companies')
-      .select('*, company_settings(*), delivery_slots(*)')
-      .eq('slug', companySlug)
-      .eq('is_active', true)
-      .single()
+  // Get site info
+  const { data: site } = await supabase.from('sites').select('*').eq('id', siteId).single();
+  if (!site) return NextResponse.json({ error: 'Site not found' }, { status: 404 });
 
-    if (companyError || !company) {
-      return NextResponse.json({ error: 'Azienda non trovata o inattiva' }, { status: 404 })
-    }
+  // Get calendar days for this site and null site (all sites)
+  const { data: calendarDays } = await supabase
+    .from('calendar_days')
+    .select('*')
+    .eq('company_id', companyId)
+    .or(`site_id.eq.${siteId},site_id.is.null`);
 
-    const settings = company.company_settings[0]
-    const closedDays = settings?.closed_days || []
-    const cutoffTime = settings?.cutoff_time || '14:00'
+  const activeWeekdays = site.delivery_weekdays || [1, 2, 3, 4, 5]; // Default Mon-Fri
+  
+  const today = new Date();
+  const availableDates = [];
 
-    // Calculate next 5 available weekdays
-    const availableDates: string[] = []
-    let currentDate = new Date()
+  // Generate next 14 days
+  for (let i = 0; i < 14; i++) {
+    const d = addDays(startOfDay(today), i);
+    const dateStr = format(d, 'yyyy-MM-dd');
+    const dayOfWeek = d.getDay() === 0 ? 7 : d.getDay(); // 1=Mon, 7=Sun
+
+    // Check calendar overrides
+    const siteOverride = calendarDays?.find(c => c.date === dateStr && c.site_id === siteId);
+    const globalOverride = calendarDays?.find(c => c.date === dateStr && c.site_id === null);
     
-    while (availableDates.length < 5) {
-      currentDate = addDays(currentDate, 1)
-      if (isWeekend(currentDate)) continue
-      
-      const dateStr = format(currentDate, 'yyyy-MM-dd')
-      if (closedDays.includes(dateStr)) continue
-      
-      if (!isCutoffPassed(dateStr, cutoffTime)) {
-        availableDates.push(dateStr)
+    const override = siteOverride || globalOverride;
+
+    let isOpen = activeWeekdays.includes(dayOfWeek);
+    let reason = null;
+
+    if (override) {
+      if (override.status === 'closed') {
+        isOpen = false;
+        reason = override.reason || 'Chiuso';
+      } else if (override.status === 'open') {
+        isOpen = true;
       }
-      
-      // Stop looking too far ahead (e.g. max 30 days)
-      if (addDays(new Date(), 30) < currentDate) break;
     }
 
-    const { data: specialItems } = await supabase
-      .from('special_items')
-      .select('*')
-      .eq('company_id', company.id)
-      .eq('is_active', true)
+    if (!isOpen) continue;
 
-    // Group special items by date
-    const specialItemsByDate = availableDates.reduce((acc, date) => {
-      acc[date] = (specialItems || []).filter(item => 
-        !item.available_dates || item.available_dates.includes(date)
-      )
-      return acc
-    }, {} as Record<string, any[]>)
+    // Check cutoff (14:00 day before, for Monday it's Saturday 14:00)
+    let cutoffDay = subDays(d, 1);
+    if (dayOfWeek === 1) { // Monday -> Saturday cutoff
+      cutoffDay = subDays(d, 2);
+    }
+    
+    const cutoffTime = new Date(cutoffDay);
+    cutoffTime.setHours(14, 0, 0, 0);
 
-    const { data: menuItems } = await supabase
-      .from('menu_items')
-      .select('*')
-      .eq('is_active', true)
+    const isCutoffPassed = isAfter(new Date(), cutoffTime);
 
-    const menuByCategory = (menuItems || []).reduce((acc, item) => {
-      const cat = item.category
-      if (!acc[cat]) acc[cat] = []
-      acc[cat].push(item)
-      return acc
-    }, {} as Record<string, any[]>)
+    availableDates.push({
+      date: dateStr,
+      formattedDate: format(d, 'EEEE d MMMM', { locale: it }),
+      isOpen: !isCutoffPassed,
+      isCutoffPassed,
+      reason: isCutoffPassed ? 'Orario limite passato' : reason
+    });
 
-    const { data: combos } = await supabase
-      .from('combos')
-      .select('*')
-      .eq('is_active', true)
-
-    return NextResponse.json({
-      company: {
-        id: company.id,
-        name: company.name,
-        slug: company.slug
-      },
-      settings,
-      slots: company.delivery_slots.filter((s: any) => s.is_active),
-      availableDates,
-      specialItemsByDate,
-      menuByCategory,
-      combos
-    })
-  } catch (error) {
-    console.error('Errore in availability:', error)
-    return NextResponse.json({ error: 'Errore interno del server' }, { status: 500 })
+    if (availableDates.filter(x => x.isOpen).length >= 5) {
+      break; // Stop after finding 5 open days
+    }
   }
+
+  return NextResponse.json({ availableDates });
 }

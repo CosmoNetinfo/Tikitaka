@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/ui/Header';
 import BackButton from '@/components/ui/BackButton';
 import Image from 'next/image';
+import { createClient } from '@/lib/supabase/client';
 
 export default function SelectSite() {
   const router = useRouter();
@@ -11,15 +12,13 @@ export default function SelectSite() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch sites from Supabase or API
+  useEffect(() => {
     const fetchSites = async () => {
-      // Mock for now or fetch actual
-      setSites([
-        { id: '11111111-1111-1111-1111-111111111111', name: 'Tecnokar 1', is_active: true },
-        { id: '22222222-2222-2222-2222-222222222222', name: 'Tecnokar 2', is_active: true },
-        { id: '33333333-3333-3333-3333-333333333333', name: 'Tecnokar 3', is_active: true },
-        { id: '44444444-4444-4444-4444-444444444444', name: 'Tecnokar 4', is_active: true },
-      ]);
+      const supabase = createClient();
+      const { data } = await supabase.from('sites').select('*').eq('is_active', true).order('sort_order');
+      if (data) {
+        setSites(data as any);
+      }
       setLoading(false);
     };
     fetchSites();

@@ -12,6 +12,7 @@ const navItems = [
   { name: "Ordini", href: "/admin/ordini", icon: ListOrdered },
   { name: "Fuori Menu", href: "/admin/fuori-menu", icon: CalendarDays },
   { name: "Sedi", href: "/admin/sedi", icon: MapPin },
+  { name: "Calendario", href: "/admin/calendario", icon: CalendarDays },
   { name: "Menu e Prezzi", href: "/admin/menu", icon: UtensilsCrossed },
   { name: "Impostazioni", href: "/admin/impostazioni", icon: Settings },
 ];

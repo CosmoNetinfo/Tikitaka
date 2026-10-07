@@ -27,6 +27,12 @@ export default function Summary({ params }: { params: { siteId: string, slotId: 
       });
     }
 
+    // Try to get site name from local storage or DB
+    const savedSiteName = localStorage.getItem('tikitaka_selected_site_name');
+    if (savedSiteName) {
+      order.setCustomerInfo({ azienda: savedSiteName });
+    }
+
     async function loadPricingData() {
       try {
         const supabase = createClient();
@@ -148,15 +154,14 @@ export default function Summary({ params }: { params: { siteId: string, slotId: 
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Azienda</label>
-              <select 
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Azienda (Sede)</label>
+              <input 
+                type="text" 
                 name="azienda"
-                value={order.customer.azienda}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 outline-none"
-              >
-                <option value="Tecnokar">Tecnokar</option>
-              </select>
+                value={order.customer.azienda || "Caricamento..."}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-xl bg-gray-100 outline-none text-gray-600 font-medium cursor-not-allowed"
+              />
             </div>
 
             <div>
