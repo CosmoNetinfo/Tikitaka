@@ -12,7 +12,6 @@ export default function SelectSite() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  useEffect(() => {
     const fetchSites = async () => {
       const supabase = createClient();
       const { data } = await supabase.from('sites').select('*').eq('is_active', true).order('sort_order');
